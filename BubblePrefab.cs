@@ -51,7 +51,9 @@ namespace HomeBubble
                 CraftingStation = "",
                 Requirements = new[]
                 {
-                    new RequirementConfig { Item = "Wood", Amount = 10, Recover = true }
+                    new RequirementConfig { Item = "Iron", Amount = 5, Recover = true },
+                    new RequirementConfig { Item = "Copper", Amount = 5, Recover = true },
+                    new RequirementConfig { Item = "DragonTear", Amount = 2, Recover = true }
                 }
             };
 
