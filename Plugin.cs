@@ -29,6 +29,8 @@ namespace HomeBubble
             _harmony.PatchAll();
 
             PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
+            // The trader camp is a location, which only becomes available a little after the other prefabs.
+            ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
         }
 
         private void OnDestroy()
@@ -57,6 +59,9 @@ namespace HomeBubble
         public static ConfigEntry<float> BaseRadius;
         public static ConfigEntry<float> FullRadius;
         public static ConfigEntry<float> MinutesPerBone;
+        public static ConfigEntry<float> Visibility;
+        public static ConfigEntry<string> Tint;
+        public static ConfigEntry<float> TintOpacity;
 
         public static void Bind(ConfigFile config)
         {
@@ -67,6 +72,14 @@ namespace HomeBubble
             FullRadius = config.Bind("Bubble", "FullRadius", 32f,
                 new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's four crafting stations. 32 covers a whole zone. The growth is shared out evenly between the upgrades.",
                     new AcceptableValueRange<float>(5f, 200f)));
+            Visibility = config.Bind("Look", "Distortion", 4f,
+                new ConfigDescription("How strongly the bubble warps what you see through it. 1 is the trader's own faint effect.",
+                    new AcceptableValueRange<float>(0.5f, 20f)));
+            Tint = config.Bind("Look", "Tint", "#4DB8FF",
+                "Colour of the bubble as a hex code, e.g. #4DB8FF.");
+            TintOpacity = config.Bind("Look", "TintOpacity", 0.12f,
+                new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off. Changes apply at startup.",
+                    new AcceptableValueRange<float>(0f, 0.6f)));
             MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
                 new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
                     new AcceptableValueRange<float>(0f, 600f)));

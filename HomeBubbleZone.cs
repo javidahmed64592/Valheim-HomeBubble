@@ -12,6 +12,7 @@ namespace HomeBubble
         private const string RadiusKey = "HB_radius";
         private const string BrokenKey = "HB_broken"; // bitmask of the stations that are gone
         private const int MissChecksBeforeCollapse = 5; // checks are 1s apart; rides out a station's data still arriving
+        private const float CollapsedRadius = 0.2f;
         private const string DrainTimeKey = "HB_lastDrain";
         private const float DrainInterval = 10f;
         private const float NoMonsterCloseMargin = 15f; // matches vanilla's EffectArea "close to" margin
@@ -33,6 +34,9 @@ namespace HomeBubble
         private ZNetView _nview;
         private ShieldGenerator _shield;
         private EffectArea _area;
+        private Transform _field;
+        private float _fieldUnitRadius = 0.5f;
+        private bool _collapsed;
         private float _timer = 10f; // forces an update on the first frame
         private float _drainTimer;
         private readonly int[] _missChecks = new int[4];
@@ -54,6 +58,13 @@ namespace HomeBubble
                 return;
             }
 
+            _field = transform.Find(BubblePrefab.ForceFieldName);
+            MeshFilter mesh = _field ? _field.GetComponent<MeshFilter>() : null;
+            if (mesh != null && mesh.sharedMesh != null)
+            {
+                _fieldUnitRadius = Mathf.Max(0.01f, mesh.sharedMesh.bounds.extents.x);
+            }
+
             Instances.Add(this);
             if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
             {
@@ -64,6 +75,34 @@ namespace HomeBubble
         private void OnDestroy()
         {
             Instances.Remove(this);
+        }
+
+        /// <summary>True if this shield generator is one of ours, so the vanilla dome effect should be skipped for it.</summary>
+        public static bool UsesForceField(ShieldGenerator shield)
+        {
+            HomeBubbleZone bubble = shield.GetComponentInParent<HomeBubbleZone>();
+            return bubble != null && bubble._field != null;
+        }
+
+        private void LateUpdate()
+        {
+            if (_field == null || _shield == null || _shield.m_shieldDome == null)
+            {
+                return;
+            }
+
+            // The generator already eases its radius up and down, so the force field simply follows it.
+            float radius = _shield.m_radius;
+            bool visible = radius > 0.1f && !_collapsed;
+            if (_field.gameObject.activeSelf != visible)
+            {
+                _field.gameObject.SetActive(visible);
+            }
+            if (visible)
+            {
+                _field.position = _shield.m_shieldDome.transform.position;
+                _field.localScale = Vector3.one * (radius / _fieldUnitRadius);
+            }
         }
 
         private void Update()
@@ -82,11 +121,14 @@ namespace HomeBubble
                 CheckStationsStillStand(zdo);
             }
 
-            if (IsCollapsed(out _))
+            _collapsed = IsCollapsed(out _);
+            if (_collapsed)
             {
-                // No radius means no protection: the dome shrinks away and monsters are no longer kept off.
-                _shield.m_minShieldRadius = 0f;
-                _shield.m_maxShieldRadius = 0f;
+                // The dome shrinks away and monsters are no longer kept off (see Protects). The shield keeps a
+                // sliver of radius because a zero radius with fuel left makes it replay its start-up sound
+                // every few ticks.
+                _shield.m_minShieldRadius = CollapsedRadius;
+                _shield.m_maxShieldRadius = CollapsedRadius;
                 return;
             }
 
@@ -273,7 +315,7 @@ namespace HomeBubble
 
         private bool Protects(Vector3 point, float margin)
         {
-            if (_shield == null || _shield.m_shieldDome == null)
+            if (_collapsed || _shield == null || _shield.m_shieldDome == null)
             {
                 return false;
             }

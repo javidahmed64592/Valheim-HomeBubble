@@ -28,6 +28,16 @@ namespace HomeBubble
         }
     }
 
+    /// <summary>Bubbles draw the trader's force field instead of the shield generator's screen-space dome.</summary>
+    [HarmonyPatch(typeof(ShieldDomeImageEffect), nameof(ShieldDomeImageEffect.SetShieldData))]
+    internal static class HideVanillaDomePatch
+    {
+        private static bool Prefix(ShieldGenerator shield)
+        {
+            return !HomeBubbleZone.UsesForceField(shield);
+        }
+    }
+
     /// <summary>A bubble can only be placed in range of an unclaimed workbench, forge, stonecutter and artisan table.</summary>
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
     internal static class PlacementGhostPatch
