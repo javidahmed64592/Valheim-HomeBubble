@@ -34,10 +34,6 @@
     <PackageReference Include="Krafs.Publicizer" Version="2.2.1" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Icons\*.png" LogicalName="Icons.%(Filename)%(Extension)" />
-  </ItemGroup>
-
   <!-- In CI (GitHub Actions) there is no local Valheim install, so game/BepInEx DLLs
        come from NuGet packages instead. Locally they come from ValheimDir above. -->
   <ItemGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
