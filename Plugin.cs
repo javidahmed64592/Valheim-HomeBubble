@@ -76,7 +76,7 @@ namespace HomeBubble
                     new AcceptableValueRange<float>(0.5f, 20f)));
             Tint = config.Bind("Look", "Tint", "#4DB8FF",
                 "Colour of the bubble as a hex code, e.g. #4DB8FF.");
-            TintOpacity = config.Bind("Look", "TintOpacity", 0.12f,
+            TintOpacity = config.Bind("Look", "TintOpacity", 0.06f,
                 new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                     new AcceptableValueRange<float>(0f, 0.6f)));
             MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
