@@ -1,0 +1,10 @@
+{
+  "name": "HomeBubble",
+  "description": "Protect your base with a big bubble that lets you build inside it.",
+  "version_number": "0.1.0",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2351",
+    "ValheimModding-Jotunn-2.30.2"
+  ],
+  "website_url": "https://github.com/javidahmed64592/Valheim-HomeBubble"
+}
