@@ -8,7 +8,7 @@ The Home Bubble works like the protective bubble around a trader's camp: monster
 The bubble requires a **Workbench, Forge, Stonecutter and Artisan Table** all within build range.
 Each bubble claims one set of these stations, so two bubbles cannot be built on the same set.
 
-The bubble starts at a radius of 16m and grows to 32m as you build every upgrade on the four stations.
+The bubble starts at a radius of 24m and grows to 48m as you build every upgrade on the four stations.
 Lose an upgrade and it shrinks again.
 
 Add bones to the bubble as you would a shield generator.

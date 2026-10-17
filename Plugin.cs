@@ -65,20 +65,19 @@ namespace HomeBubble
 
         public static void Bind(ConfigFile config)
         {
-            // A Valheim zone is 64m across, so 16m is half a zone and 32m is a whole one.
-            BaseRadius = config.Bind("Bubble", "BaseRadius", 16f,
-                new ConfigDescription("Radius (metres) of a bubble whose crafting stations have no upgrades. 16 covers about half a zone.",
+            BaseRadius = config.Bind("Bubble", "BaseRadius", 24f,
+                new ConfigDescription("Radius (metres) of a bubble whose crafting stations have no upgrades.",
                     new AcceptableValueRange<float>(5f, 200f)));
-            FullRadius = config.Bind("Bubble", "FullRadius", 32f,
-                new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's four crafting stations. 32 covers a whole zone. The growth is shared out evenly between the upgrades.",
+            FullRadius = config.Bind("Bubble", "FullRadius", 48f,
+                new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's four crafting stations.",
                     new AcceptableValueRange<float>(5f, 200f)));
             Visibility = config.Bind("Look", "Distortion", 4f,
-                new ConfigDescription("How strongly the bubble warps what you see through it. 1 is the trader's own faint effect.",
+                new ConfigDescription("How strongly the bubble warps what you see through it.",
                     new AcceptableValueRange<float>(0.5f, 20f)));
             Tint = config.Bind("Look", "Tint", "#4DB8FF",
                 "Colour of the bubble as a hex code, e.g. #4DB8FF.");
             TintOpacity = config.Bind("Look", "TintOpacity", 0.12f,
-                new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off. Changes apply at startup.",
+                new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                     new AcceptableValueRange<float>(0f, 0.6f)));
             MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
                 new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
