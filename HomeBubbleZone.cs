@@ -15,6 +15,10 @@ namespace HomeBubble
         private const float CollapsedRadius = 0.2f;
         private const string DrainTimeKey = "HB_lastDrain";
         private const float DrainInterval = 10f;
+        private const string OffKey = "HB_off";
+        private const float FadeSpeed = 0.5f; // fraction of the fuel range the look catches up per second
+        private const float LowFuelOpacity = 0.25f; // how much of its strength the field keeps on the last bone
+        private static readonly Color LowFuelColor = new Color(1f, 0.15f, 0.1f);
         private const float NoMonsterCloseMargin = 15f; // matches vanilla's EffectArea "close to" margin
 
         private static readonly string[] StationKeys = { "HB_station0", "HB_station1", "HB_station2", "HB_station3" };
@@ -41,6 +45,17 @@ namespace HomeBubble
         private float _drainTimer;
         private readonly int[] _missChecks = new int[4];
 
+        // Each bubble gets its own copy of the field's materials so its look can follow its own fuel.
+        private Material[] _fieldMaterials = new Material[0];
+        private Color[] _fieldColors;
+        private float[] _fieldRefraction;
+        private Material _shellMaterial;
+        private Color _shellColor;
+        private float _shownFuel = -1f;
+        private float _appliedFuel = -1f;
+        private bool _off;
+        private float _lowFuelLoopStart; // the generator's own low-fuel hum threshold
+
         private void Start()
         {
             if (Player.IsPlacementGhost(gameObject))
@@ -65,6 +80,9 @@ namespace HomeBubble
                 _fieldUnitRadius = Mathf.Max(0.01f, mesh.sharedMesh.bounds.extents.x);
             }
 
+            _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
+            SetUpFieldLook();
+
             Instances.Add(this);
             if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
             {
@@ -75,6 +93,151 @@ namespace HomeBubble
         private void OnDestroy()
         {
             Instances.Remove(this);
+            foreach (Material material in _fieldMaterials)
+            {
+                Destroy(material);
+            }
+            if (_shellMaterial != null)
+            {
+                Destroy(_shellMaterial);
+            }
+        }
+
+        private void SetUpFieldLook()
+        {
+            if (_field == null)
+            {
+                return;
+            }
+
+            var renderer = _field.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                _fieldMaterials = renderer.materials; // instances, so other bubbles are unaffected
+                _fieldColors = new Color[_fieldMaterials.Length];
+                _fieldRefraction = new float[_fieldMaterials.Length];
+                for (int i = 0; i < _fieldMaterials.Length; i++)
+                {
+                    Material material = _fieldMaterials[i];
+                    _fieldColors[i] = material.HasProperty("_Color") ? material.GetColor("_Color") : Color.white;
+                    _fieldRefraction[i] = material.HasProperty("_RefractionIntensity") ? material.GetFloat("_RefractionIntensity") : 0f;
+                }
+            }
+
+            Transform shell = _field.Find("HB_Shell");
+            var shellRenderer = shell ? shell.GetComponent<MeshRenderer>() : null;
+            if (shellRenderer != null)
+            {
+                _shellMaterial = shellRenderer.material;
+                _shellColor = _shellMaterial.color;
+            }
+        }
+
+        /// <summary>Redder and fainter as the fuel runs down; full strength with a full generator.</summary>
+        private void ApplyFuelLook(float fuel)
+        {
+            Color low = LowFuelColor;
+            float strength = Mathf.Lerp(LowFuelOpacity, 1f, fuel);
+            for (int i = 0; i < _fieldMaterials.Length; i++)
+            {
+                Material material = _fieldMaterials[i];
+                if (material.HasProperty("_Color"))
+                {
+                    Color color = Color.Lerp(low, _fieldColors[i], fuel);
+                    color.a = _fieldColors[i].a;
+                    material.SetColor("_Color", color);
+                }
+                if (material.HasProperty("_RefractionIntensity"))
+                {
+                    material.SetFloat("_RefractionIntensity", _fieldRefraction[i] * strength);
+                }
+            }
+            if (_shellMaterial != null)
+            {
+                Color color = Color.Lerp(low, _shellColor, fuel);
+                color.a = _shellColor.a * strength;
+                _shellMaterial.color = color;
+            }
+        }
+
+        public bool IsOff => _off;
+
+        private readonly List<Behaviour> _silenced = new List<Behaviour>(); // sounds and lights switched off with the bubble
+        private readonly List<ParticleSystem> _stopped = new List<ParticleSystem>();
+
+        /// <summary>
+        /// Makes the generator look and sound dead while the bubble is switched off. The generator re-lights itself
+        /// from its fuel several times a second, so this runs after each of those updates.
+        /// </summary>
+        public void ApplyGeneratorState()
+        {
+            if (_shield == null)
+            {
+                return;
+            }
+
+            // The low-fuel hum is a looping effect the generator starts and stops itself. A zero threshold stops
+            // it starting, and asking it to stop removes any already playing.
+            _shield.m_shieldLowLoopFuelStart = _off ? 0f : _lowFuelLoopStart;
+            if (_off)
+            {
+                Character.SetupContinuousEffect(_shield.transform, _shield.transform.position, false,
+                    _shield.m_shieldLowLoop, ref _shield.m_lowLoopInstances);
+                _shield.m_enabledObject?.SetActive(false);
+                _shield.m_disabledObject?.SetActive(true);
+                foreach (Behaviour behaviour in GetComponentsInChildren<Behaviour>(true))
+                {
+                    if ((behaviour is Light || behaviour is AudioSource) && behaviour.enabled)
+                    {
+                        behaviour.enabled = false;
+                        _silenced.Add(behaviour);
+                    }
+                }
+                foreach (ParticleSystem particles in GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    if (particles.isPlaying)
+                    {
+                        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                        _stopped.Add(particles);
+                    }
+                }
+            }
+            else if (_silenced.Count > 0 || _stopped.Count > 0)
+            {
+                foreach (Behaviour behaviour in _silenced)
+                {
+                    if (behaviour != null)
+                    {
+                        behaviour.enabled = true;
+                    }
+                }
+                foreach (ParticleSystem particles in _stopped)
+                {
+                    if (particles != null)
+                    {
+                        particles.Play(true);
+                    }
+                }
+                _silenced.Clear();
+                _stopped.Clear();
+                _shield.Invoke("UpdateShield", 0f); // light back up from the fuel straight away
+            }
+        }
+
+        /// <summary>Switches the bubble on or off. Anyone can ask; the owner of the generator's data keeps the setting.</summary>
+        public void Toggle()
+        {
+            if (_nview == null || !_nview.IsValid())
+            {
+                return;
+            }
+            _nview.ClaimOwnership();
+            ZDO zdo = _nview.GetZDO();
+            bool off = !zdo.GetBool(OffKey, false);
+            zdo.Set(OffKey, off);
+            _off = off;
+            _timer = 10f; // apply straight away
+            ApplyGeneratorState();
         }
 
         /// <summary>True if this shield generator is one of ours, so the vanilla dome effect should be skipped for it.</summary>
@@ -93,13 +256,28 @@ namespace HomeBubble
 
             // The generator already eases its radius up and down, so the force field simply follows it.
             float radius = _shield.m_radius;
-            bool visible = radius > 0.1f && !_collapsed;
+            bool visible = radius > 0.1f && !_collapsed && !_off;
             if (_field.gameObject.activeSelf != visible)
             {
                 _field.gameObject.SetActive(visible);
             }
             if (visible)
             {
+                float fuel = _shield.GetFuelRatio();
+                if (_shownFuel < 0f)
+                {
+                    _shownFuel = fuel;
+                }
+                else
+                {
+                    _shownFuel = Mathf.MoveTowards(_shownFuel, fuel, FadeSpeed * Time.deltaTime);
+                }
+                if (!Mathf.Approximately(_shownFuel, _appliedFuel))
+                {
+                    _appliedFuel = _shownFuel;
+                    ApplyFuelLook(_shownFuel);
+                }
+
                 _field.position = _shield.m_shieldDome.transform.position;
                 _field.localScale = Vector3.one * (radius / _fieldUnitRadius);
             }
@@ -121,10 +299,12 @@ namespace HomeBubble
                 CheckStationsStillStand(zdo);
             }
 
+            _off = zdo.GetBool(OffKey, false);
             _collapsed = IsCollapsed(out _);
-            if (_collapsed)
+            if (_collapsed || _off)
             {
-                // The dome shrinks away and monsters are no longer kept off (see Protects). The shield keeps a
+                // Collapsed or switched off: the dome shrinks away and monsters are no longer kept off (see
+                // Protects), and no bones burn. The shield keeps a
                 // sliver of radius because a zero radius with fuel left makes it replay its start-up sound
                 // every few ticks.
                 _shield.m_minShieldRadius = CollapsedRadius;
@@ -315,7 +495,7 @@ namespace HomeBubble
 
         private bool Protects(Vector3 point, float margin)
         {
-            if (_collapsed || _shield == null || _shield.m_shieldDome == null)
+            if (_collapsed || _off || _shield == null || _shield.m_shieldDome == null)
             {
                 return false;
             }

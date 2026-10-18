@@ -1,7 +1,8 @@
 # Home Bubble
 
-Protect your base with a big bubble that lets you build inside it.
-The bubble keeps away enemies so you can build without interruption.
+Keep enemies out of your base with a protective bubble.
+The bubble even protects against projectiles and rain.
+Keep the bubble generator fuelled with bones, and toggle it on and off with `Shift + E`.
 
 ![Small Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/game_screenshot_1.png)
 ![Big Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/game_screenshot_2.png)

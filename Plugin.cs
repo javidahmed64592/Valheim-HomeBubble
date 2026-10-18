@@ -14,7 +14,7 @@ namespace HomeBubble
     {
         public const string PluginGUID = "javidahmed64592.homebubble";
         public const string PluginName = "Home Bubble";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         internal static BepInEx.Logging.ManualLogSource Log;
 
@@ -29,7 +29,6 @@ namespace HomeBubble
             _harmony.PatchAll();
 
             PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
-            // The trader camp is a location, which only becomes available a little after the other prefabs.
             ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
         }
 
@@ -59,6 +58,7 @@ namespace HomeBubble
         public static ConfigEntry<float> BaseRadius;
         public static ConfigEntry<float> FullRadius;
         public static ConfigEntry<float> MinutesPerBone;
+        public static ConfigEntry<int> MaxFuel;
         public static ConfigEntry<float> Visibility;
         public static ConfigEntry<string> Tint;
         public static ConfigEntry<float> TintOpacity;
@@ -69,8 +69,15 @@ namespace HomeBubble
                 new ConfigDescription("Radius (metres) of a bubble whose crafting stations have no upgrades.",
                     new AcceptableValueRange<float>(5f, 200f)));
             FullRadius = config.Bind("Bubble", "FullRadius", 48f,
-                new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's four crafting stations.",
+                new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's crafting stations.",
                     new AcceptableValueRange<float>(5f, 200f)));
+            MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
+                new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
+                    new AcceptableValueRange<float>(0f, 600f)));
+            MaxFuel = config.Bind("Bubble", "MaxFuel", 50,
+                new ConfigDescription("The most bones the generator can hold. Takes effect after a restart.",
+                    new AcceptableValueRange<int>(1, 1000)));
+
             Visibility = config.Bind("Look", "Distortion", 4f,
                 new ConfigDescription("How strongly the bubble warps what you see through it.",
                     new AcceptableValueRange<float>(0.5f, 20f)));
@@ -79,9 +86,6 @@ namespace HomeBubble
             TintOpacity = config.Bind("Look", "TintOpacity", 0.06f,
                 new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                     new AcceptableValueRange<float>(0f, 0.6f)));
-            MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
-                new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
-                    new AcceptableValueRange<float>(0f, 600f)));
         }
     }
 }

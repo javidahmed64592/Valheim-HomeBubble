@@ -103,10 +103,59 @@ namespace HomeBubble
         private static void Postfix(ShieldGenerator __instance, ref string __result)
         {
             HomeBubbleZone bubble = __instance.GetComponentInParent<HomeBubbleZone>();
-            if (bubble != null && bubble.IsCollapsed(out string station))
+            if (bubble == null)
+            {
+                return;
+            }
+
+            if (bubble.IsCollapsed(out string station))
             {
                 __result = "Home Bubble\n<color=red>" + CollapseText.For(station) + "</color>";
+                return;
             }
+
+            string state = bubble.IsOff ? "Turn on" : "Turn off";
+            __result += "\n[<color=yellow><b>Shift + E</b></color>] " + state;
+            if (bubble.IsOff)
+            {
+                __result += "\n<color=red>Switched off</color>";
+            }
+        }
+    }
+
+    /// <summary>A switched-off bubble looks and sounds dead, whatever fuel it has.</summary>
+    [HarmonyPatch(typeof(ShieldGenerator), "UpdateShield")]
+    internal static class GeneratorOffPatch
+    {
+        private static void Postfix(ShieldGenerator __instance)
+        {
+            __instance.GetComponentInParent<HomeBubbleZone>()?.ApplyGeneratorState();
+        }
+    }
+
+    /// <summary>Shift + E on the generator switches the bubble on or off instead of adding bones.</summary>
+    [HarmonyPatch(typeof(Switch), nameof(Switch.Interact))]
+    internal static class ToggleBubblePatch
+    {
+        private static bool Prefix(Switch __instance, bool hold, bool alt, ref bool __result)
+        {
+            if (!alt)
+            {
+                return true;
+            }
+
+            HomeBubbleZone bubble = __instance.GetComponentInParent<HomeBubbleZone>();
+            if (bubble == null)
+            {
+                return true;
+            }
+
+            if (!hold)
+            {
+                bubble.Toggle();
+            }
+            __result = false;
+            return false;
         }
     }
 
