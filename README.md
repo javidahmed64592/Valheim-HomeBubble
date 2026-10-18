@@ -35,6 +35,7 @@ Settings are in the BepInEx config file for the mod:
 | BaseRadius | The bubble's size without any upgrades. |
 | FullRadius | The bubble's size with all upgrades. |
 | MinutesPerBone | How long one bone lasts. 0 turns the drain off. |
+| MaxFuel | The maximum amount of fuel the generator can hold. |
 | Tint | The bubble's colour as a hex code, e.g. #4DB8FF. |
 | TintOpacity | How solid the bubble's coloured surface is. 0 turns it off. |
 | Distortion | How strongly the bubble warps what you see through it. |

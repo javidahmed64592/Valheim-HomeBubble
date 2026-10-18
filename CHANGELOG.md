@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Updated README to include the new `MaxFuel` configuration option.
+
 ## 0.2.0
 
 - The bubble now becomes more red and fades as it loses fuel.

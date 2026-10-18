@@ -14,7 +14,7 @@ namespace HomeBubble
     {
         public const string PluginGUID = "javidahmed64592.homebubble";
         public const string PluginName = "Home Bubble";
-        public const string PluginVersion = "0.2.0";
+        public const string PluginVersion = "0.2.1";
 
         internal static BepInEx.Logging.ManualLogSource Log;
 
