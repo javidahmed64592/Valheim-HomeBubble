@@ -47,7 +47,7 @@ namespace HomeBubble
                 Name = "Home Bubble",
                 Description = "A protective bubble for your base. Monsters keep out, but you can still build inside. Needs a Workbench, Forge, Stonecutter and Artisan Table nearby, and grows as they are upgraded. Fuelled by bones.",
                 PieceTable = "Hammer",
-                Category = "Misc",
+                Category = "Defence",
                 CraftingStation = "",
                 Requirements = new[]
                 {
