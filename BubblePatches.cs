@@ -123,7 +123,17 @@ namespace HomeBubble
         }
     }
 
-    /// <summary>Shift + E on the machine switches the bubble on or off instead of adding bones.</summary>
+    /// <summary>A switched-off bubble looks and sounds dead, whatever fuel it has.</summary>
+    [HarmonyPatch(typeof(ShieldGenerator), "UpdateShield")]
+    internal static class GeneratorOffPatch
+    {
+        private static void Postfix(ShieldGenerator __instance)
+        {
+            __instance.GetComponentInParent<HomeBubbleZone>()?.ApplyGeneratorState();
+        }
+    }
+
+    /// <summary>Shift + E on the generator switches the bubble on or off instead of adding bones.</summary>
     [HarmonyPatch(typeof(Switch), nameof(Switch.Interact))]
     internal static class ToggleBubblePatch
     {

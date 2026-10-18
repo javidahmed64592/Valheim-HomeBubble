@@ -75,7 +75,7 @@ namespace HomeBubble
                 new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
                     new AcceptableValueRange<float>(0f, 600f)));
             MaxFuel = config.Bind("Bubble", "MaxFuel", 50,
-                new ConfigDescription("The most bones the machine can hold. Takes effect after a restart.",
+                new ConfigDescription("The most bones the generator can hold. Takes effect after a restart.",
                     new AcceptableValueRange<int>(1, 1000)));
 
             Visibility = config.Bind("Look", "Distortion", 4f,

@@ -54,6 +54,7 @@ namespace HomeBubble
         private float _shownFuel = -1f;
         private float _appliedFuel = -1f;
         private bool _off;
+        private float _lowFuelLoopStart; // the generator's own low-fuel hum threshold
 
         private void Start()
         {
@@ -79,6 +80,7 @@ namespace HomeBubble
                 _fieldUnitRadius = Mathf.Max(0.01f, mesh.sharedMesh.bounds.extents.x);
             }
 
+            _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
             SetUpFieldLook();
 
             Instances.Add(this);
@@ -131,7 +133,7 @@ namespace HomeBubble
             }
         }
 
-        /// <summary>Redder and fainter as the fuel runs down; full strength with a full machine.</summary>
+        /// <summary>Redder and fainter as the fuel runs down; full strength with a full generator.</summary>
         private void ApplyFuelLook(float fuel)
         {
             Color low = LowFuelColor;
@@ -160,7 +162,69 @@ namespace HomeBubble
 
         public bool IsOff => _off;
 
-        /// <summary>Switches the bubble on or off. Anyone can ask; the owner of the machine's data keeps the setting.</summary>
+        private readonly List<Behaviour> _silenced = new List<Behaviour>(); // sounds and lights switched off with the bubble
+        private readonly List<ParticleSystem> _stopped = new List<ParticleSystem>();
+
+        /// <summary>
+        /// Makes the generator look and sound dead while the bubble is switched off. The generator re-lights itself
+        /// from its fuel several times a second, so this runs after each of those updates.
+        /// </summary>
+        public void ApplyGeneratorState()
+        {
+            if (_shield == null)
+            {
+                return;
+            }
+
+            // The low-fuel hum is a looping effect the generator starts and stops itself. A zero threshold stops
+            // it starting, and asking it to stop removes any already playing.
+            _shield.m_shieldLowLoopFuelStart = _off ? 0f : _lowFuelLoopStart;
+            if (_off)
+            {
+                Character.SetupContinuousEffect(_shield.transform, _shield.transform.position, false,
+                    _shield.m_shieldLowLoop, ref _shield.m_lowLoopInstances);
+                _shield.m_enabledObject?.SetActive(false);
+                _shield.m_disabledObject?.SetActive(true);
+                foreach (Behaviour behaviour in GetComponentsInChildren<Behaviour>(true))
+                {
+                    if ((behaviour is Light || behaviour is AudioSource) && behaviour.enabled)
+                    {
+                        behaviour.enabled = false;
+                        _silenced.Add(behaviour);
+                    }
+                }
+                foreach (ParticleSystem particles in GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    if (particles.isPlaying)
+                    {
+                        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                        _stopped.Add(particles);
+                    }
+                }
+            }
+            else if (_silenced.Count > 0 || _stopped.Count > 0)
+            {
+                foreach (Behaviour behaviour in _silenced)
+                {
+                    if (behaviour != null)
+                    {
+                        behaviour.enabled = true;
+                    }
+                }
+                foreach (ParticleSystem particles in _stopped)
+                {
+                    if (particles != null)
+                    {
+                        particles.Play(true);
+                    }
+                }
+                _silenced.Clear();
+                _stopped.Clear();
+                _shield.Invoke("UpdateShield", 0f); // light back up from the fuel straight away
+            }
+        }
+
+        /// <summary>Switches the bubble on or off. Anyone can ask; the owner of the generator's data keeps the setting.</summary>
         public void Toggle()
         {
             if (_nview == null || !_nview.IsValid())
@@ -173,6 +237,7 @@ namespace HomeBubble
             zdo.Set(OffKey, off);
             _off = off;
             _timer = 10f; // apply straight away
+            ApplyGeneratorState();
         }
 
         /// <summary>True if this shield generator is one of ours, so the vanilla dome effect should be skipped for it.</summary>

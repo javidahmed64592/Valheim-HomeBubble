@@ -3,8 +3,8 @@
 ## 0.2.0
 
 - The bubble now becomes more red and fades as it loses fuel.
-- The bubble can now be toggled on and off by pressing `Shift + E` on the machine.
-- The maximum amount of fuel the machine can hold is now configurable.
+- The bubble can now be toggled on and off by pressing `Shift + E` on the generator.
+- The maximum amount of fuel the generator can hold is now configurable.
 
 ## 0.1.0
 
