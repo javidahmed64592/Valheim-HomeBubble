@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- The bubble now becomes more red and fades as it loses fuel.
+- The bubble can now be toggled on and off by pressing `Shift + E` on the machine.
+- The maximum amount of fuel the machine can hold is now configurable.
+
 ## 0.1.0
 
 - Added the **Home Bubble**: a buildable piece (5 Iron, 5 Copper, 2 Dragon Tears, Hammer, Defence tab) that surrounds your base with a protective bubble. Monsters keep away from it just as they do from a trader's camp, but you can still build inside it.

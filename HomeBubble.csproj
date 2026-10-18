@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>HomeBubble</AssemblyName>
-    <Description>Protect your base with a big bubble that lets you build inside it.</Description>
-    <Version>0.1.0</Version>
+    <Description>Keep enemies out of your base with a protective bubble.</Description>
+    <Version>0.2.0</Version>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>

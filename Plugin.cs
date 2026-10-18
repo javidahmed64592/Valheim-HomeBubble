@@ -14,7 +14,7 @@ namespace HomeBubble
     {
         public const string PluginGUID = "javidahmed64592.homebubble";
         public const string PluginName = "Home Bubble";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         internal static BepInEx.Logging.ManualLogSource Log;
 
@@ -29,7 +29,6 @@ namespace HomeBubble
             _harmony.PatchAll();
 
             PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
-            // The trader camp is a location, which only becomes available a little after the other prefabs.
             ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
         }
 
