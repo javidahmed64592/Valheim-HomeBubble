@@ -28,6 +28,7 @@ namespace HomeBubble
             // The vanilla generator's strike attack would wipe the bubble's fuel; this is a defensive piece only.
             ShieldGenerator shield = clone.GetComponentInChildren<ShieldGenerator>(true);
             shield.m_enableAttack = false;
+            shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
             shield.m_name = "Home Bubble"; // the hover text, in place of "$piece_shieldgenerator"
 
             // Stand-in the no-monster patches hand back to the AI so monsters have something to flee from.
@@ -107,6 +108,13 @@ namespace HomeBubble
             }
         }
 
+        private static Color ParseTint()
+        {
+            return ColorUtility.TryParseHtmlString(BubbleConfig.Tint.Value, out Color tint)
+                ? tint
+                : new Color(0.3f, 0.72f, 1f);
+        }
+
         /// <summary>
         /// The trader's field is a distortion effect with a black tint, which is faint on its own. The bubble gets
         /// its own copy of the material with stronger refraction and a tint, plus a thin translucent shell so the
@@ -114,11 +122,7 @@ namespace HomeBubble
         /// </summary>
         private static void BoostVisibility(GameObject field)
         {
-            Color tint = Color.cyan;
-            if (!ColorUtility.TryParseHtmlString(BubbleConfig.Tint.Value, out tint))
-            {
-                tint = new Color(0.3f, 0.72f, 1f);
-            }
+            Color tint = ParseTint();
 
             var renderer = field.GetComponent<MeshRenderer>();
             if (renderer != null)
