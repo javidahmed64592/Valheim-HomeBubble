@@ -4,6 +4,7 @@
 
 - Added an `.editorconfig`, `Directory.Build.props` and a CI workflow that runs `dotnet format` and a Release build.
 - Reformatted the code to match the new code style rules (no behaviour change).
+- Added the `UnityEngine.AudioModule` and `UnityEngine.ParticleSystemModule` references so local builds compile.
 
 ## 0.2.1
 
