@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added an `.editorconfig`, `Directory.Build.props` and a CI workflow that runs `dotnet format` and a Release build.
+- Reformatted the code to match the new code style rules (no behaviour change).
+
 ## 0.2.1
 
 - Updated README to include the new `MaxFuel` configuration option.
