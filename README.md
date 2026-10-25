@@ -1,3 +1,7 @@
+[![CI](https://img.shields.io/github/actions/workflow/status/javidahmed64592/valheim-homebubble/ci.yml?branch=main&style=flat-square&label=CI&logo=github)](https://github.com/javidahmed64592/valheim-homebubble/actions/workflows/ci.yml)
+[![Package](https://img.shields.io/github/actions/workflow/status/javidahmed64592/valheim-homebubble/package.yml?branch=main&style=flat-square&label=Package&logo=github)](https://github.com/javidahmed64592/valheim-homebubble/actions/workflows/package.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # Home Bubble
 
 Keep enemies out of your base with a protective bubble.
@@ -39,3 +43,7 @@ Settings are in the BepInEx config file for the mod:
 | Tint | The bubble's colour as a hex code, e.g. #4DB8FF. |
 | TintOpacity | How solid the bubble's coloured surface is. 0 turns it off. |
 | Distortion | How strongly the bubble warps what you see through it. |
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/javidahmed64592/Valheim-HomeBubble/blob/main/LICENSE) file for details.
