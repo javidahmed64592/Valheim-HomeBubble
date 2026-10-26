@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- A bubble can now use a station that is out of its own build range but still lets you build there, such as one linked by BenchLink.
+
 ## 0.3.0
 
 - Added an `.editorconfig`, `Directory.Build.props` and a CI workflow that runs `dotnet format`, a Release build and a NuGet vulnerability check.

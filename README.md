@@ -13,7 +13,7 @@ Keep the bubble generator fuelled with bones, and toggle it on and off with `Shi
 
 ## Building It
 
-The bubble requires a **Workbench, Forge, Stonecutter and Artisan Table** all within build range.
+The bubble requires a **Workbench, Forge, Stonecutter and Artisan Table** all within build range, including range extended by [BenchLink](https://github.com/javidahmed64592/Valheim-BenchLink).
 Each bubble claims one set of these stations, so two bubbles cannot be built on the same set.
 
 Find it in the Hammer's **Defence** tab.
