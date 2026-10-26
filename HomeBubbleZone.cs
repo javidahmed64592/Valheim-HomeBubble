@@ -571,18 +571,24 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         return FindUnclaimedStation(index, point, claimed, out _);
     }
 
-    /// <summary>The closest station of the required type in build range of the point that is not claimed.</summary>
+    /// <summary>
+    /// The station of the required type that serves the point and is not claimed. Stations in plain build range are
+    /// preferred, closest first. Failing that, whatever station the game says lets you build there is used, so
+    /// anything that widens build range (such as BenchLink's linked stations) counts too.
+    /// </summary>
     private static CraftingStation FindUnclaimedStation(int index, Vector3 point, HashSet<ZDOID> claimed, out bool anyInRange)
     {
         anyInRange = false;
         CraftingStation best = null;
         float bestDistance = float.MaxValue;
+        string stationName = null;
         foreach (CraftingStation station in CraftingStation.m_allStations)
         {
             if (station == null || Utils.GetPrefabName(station.gameObject) != RequiredStations[index].Prefab)
             {
                 continue;
             }
+            stationName = station.m_name;
             Vector3 flat = point;
             flat.y = station.transform.position.y; // build range ignores height, like vanilla
             float distance = Vector3.Distance(station.transform.position, flat);
@@ -591,18 +597,32 @@ internal sealed class HomeBubbleZone : MonoBehaviour
                 continue;
             }
             anyInRange = true;
-            ZNetView view = station.GetComponent<ZNetView>();
-            if (view == null || !view.IsValid() || claimed.Contains(view.GetZDO().m_uid))
-            {
-                continue;
-            }
-            if (distance < bestDistance)
+            if (IsFree(station, claimed) && distance < bestDistance)
             {
                 bestDistance = distance;
                 best = station;
             }
         }
-        return best;
+
+        if (best != null || stationName == null)
+        {
+            return best;
+        }
+
+        // Nothing in plain range is free: ask the game, which also knows about any extended build range.
+        CraftingStation buildable = CraftingStation.HaveBuildStationInRange(stationName, point);
+        if (buildable == null)
+        {
+            return null;
+        }
+        anyInRange = true;
+        return IsFree(buildable, claimed) ? buildable : null;
+    }
+
+    private static bool IsFree(CraftingStation station, HashSet<ZDOID> claimed)
+    {
+        ZNetView view = station.GetComponent<ZNetView>();
+        return view != null && view.IsValid() && !claimed.Contains(view.GetZDO().m_uid);
     }
 
     /// <summary>
