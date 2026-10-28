@@ -1,9 +1,9 @@
 {
   "name": "HomeBubble",
   "description": "Keep enemies out of your base with a protective bubble.",
-  "version_number": "0.3.1",
+  "version_number": "0.3.2",
   "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2351",
+    "denikson-BepInExPack_Valheim-5.4.2360",
     "ValheimModding-Jotunn-2.30.2"
   ],
   "website_url": "https://github.com/javidahmed64592/Valheim-HomeBubble"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Updated the BepInExPack_Valheim dependency to 5.4.2360.
+
 ## 0.3.1
 
 - A bubble can now use a station that is out of its own build range but still lets you build there, such as one linked by BenchLink.
