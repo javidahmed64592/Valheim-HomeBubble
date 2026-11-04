@@ -47,7 +47,7 @@ internal static class BubblePrefab
         PieceConfig config = new()
         {
             Name = "Home Bubble",
-            Description = "A protective bubble for your base. Monsters keep out, but you can still build inside. Needs a Workbench, Forge, Stonecutter and Artisan Table nearby, and grows as they are upgraded. Fuelled by bones.",
+            Description = "A protective bubble for your base. Monsters keep out, but you can still build inside. Needs a Workbench, Forge, Stonecutter and Artisan Table nearby, and grows as they are upgraded, and as a Black Forge and Galdr Table nearby are upgraded too. Fuelled by bones.",
             PieceTable = "Hammer",
             Category = "Defence",
             CraftingStation = "",
