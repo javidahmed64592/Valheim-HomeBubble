@@ -26,7 +26,8 @@ Find it in the Hammer's **Defence** tab.
 
 ## Bubble Size
 
-The bubble grows as you build upgrades on the Workbench and Forge.
+The bubble grows as you build upgrades on the Workbench, Forge, Stonecutter and Artisan Table.
+A Black Forge and Galdr Table within range make it grow too, but they are never required: without them the bubble simply ignores them.
 If one of the bubble's four stations is destroyed, the bubble goes down.
 Rebuild the station within range and it comes back.
 

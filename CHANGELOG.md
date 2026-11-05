@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- The bubble now also grows as the Black Forge and Galdr Table in range are upgraded. They are still not required to build the bubble or keep it up.
+
 ## 0.3.2
 
 - Updated the BepInExPack_Valheim dependency to 5.4.2360.

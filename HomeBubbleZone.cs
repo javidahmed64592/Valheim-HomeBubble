@@ -6,7 +6,7 @@ namespace HomeBubble;
 
 /// <summary>
 /// The behaviour layered on top of the cloned shield generator: it keeps the monsters out like a trader's
-/// safe zone, ties the bubble to one set of crafting stations, and sizes the dome from their upgrades.
+/// safe zone, ties the bubble to one set of crafting stations, and sizes the dome from their upgrades (and from an optional Black Forge and Galdr Table).
 /// </summary>
 internal sealed class HomeBubbleZone : MonoBehaviour
 {
@@ -46,6 +46,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         ("piece_stonecutter", "Stonecutter"),
         ("piece_artisanstation", "Artisan Table"),
     ];
+
+    /// <summary>
+    /// Stations that make the bubble bigger when upgraded but are never needed to build it or keep it up.
+    /// </summary>
+    private static readonly string[] OptionalStationPrefabs = ["blackforge", "piece_magetable"];
 
     private static readonly Dictionary<string, int> MaxUpgrades = [];
 
@@ -333,7 +338,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         if (_nview.IsOwner())
         {
-            float? radius = ComputeRadius(zdo);
+            float? radius = ComputeRadius(zdo, transform.position);
             if (radius.HasValue)
             {
                 zdo.Set(RadiusKey, radius.Value);
@@ -452,7 +457,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     }
 
     /// <summary>The radius from the claimed stations' upgrades, or null if any of them is not loaded.</summary>
-    private static float? ComputeRadius(ZDO zdo)
+    private static float? ComputeRadius(ZDO zdo, Vector3 bubblePosition)
     {
         int upgrades = 0;
         int possible = 0;
@@ -469,9 +474,43 @@ internal sealed class HomeBubbleZone : MonoBehaviour
             possible += CountAvailableUpgrades(station);
         }
 
+        // Optional stations only count while one is in range of the bubble; without one they add nothing.
+        foreach (string prefab in OptionalStationPrefabs)
+        {
+            CraftingStation station = FindOptionalStation(prefab, bubblePosition);
+            if (station != null)
+            {
+                upgrades += CountUpgrades(station);
+                possible += CountAvailableUpgrades(station);
+            }
+        }
+
         // Fully upgraded is always the biggest the bubble gets; every upgrade adds an equal share.
         float progress = possible > 0 ? Mathf.Clamp01((float)upgrades / possible) : 0f;
         return (float)Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress);
+    }
+
+    /// <summary>The closest station of an optional type that serves the point, or null if there is none.</summary>
+    private static CraftingStation FindOptionalStation(string prefab, Vector3 point)
+    {
+        CraftingStation best = null;
+        float bestDistance = float.MaxValue;
+        foreach (CraftingStation station in CraftingStation.m_allStations)
+        {
+            if (station == null || Utils.GetPrefabName(station.gameObject) != prefab)
+            {
+                continue;
+            }
+            Vector3 flat = point;
+            flat.y = station.transform.position.y; // build range ignores height, like vanilla
+            float distance = Vector3.Distance(station.transform.position, flat);
+            if (distance < station.GetStationBuildRange() && distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = station;
+            }
+        }
+        return best;
     }
 
     /// <summary>The kinds of upgrade built next to the station (vanilla counts a repeated kind once).</summary>
