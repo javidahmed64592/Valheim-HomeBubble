@@ -2,10 +2,11 @@
 
 ## 0.5.0
 
+- Fixed a destroyed Workbench, Forge, Stonecutter or Artisan Table not bringing the bubble down when another station of that type was in range. The bubble switched to that station and changed size instead, and then ignored the station when it was rebuilt. Now the bubble goes down, and only a station built afterwards brings it back.
+- The BepInEx log now says when a bubble claims its stations, loses one, and claims a rebuilt one.
 - Switching a bubble on or off with Shift + E now needs access to any ward it stands in, like opening a chest, so other players can't turn off your bubble.
 - The switch is now handled by whoever's game is looking after the generator, so two players toggling at once can't overwrite each other.
 - `BaseRadius`, `FullRadius`, `MinutesPerBone` and `MaxFuel` are now synced from the server, so every player sees the same bubble size and fuel use.
-- `MaxFuel` now applies straight away, without a restart.
 - The hover hint now shows your own key bindings instead of always saying Shift + E.
 - The piece, messages and hover text can now be translated (`Translations/English.json`), and the station names use the game's own translations.
 - Added a CI check that the version matches in every file.

@@ -40,6 +40,12 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
     private static readonly string[] StationKeys = ["HB_station0", "HB_station1", "HB_station2", "HB_station3"];
 
+    /// <summary>
+    /// For each lost station, the stations of that type that already served the bubble when it was lost. They
+    /// can't stand in for it: only a station built afterwards brings the bubble back.
+    /// </summary>
+    private static readonly string[] SkipKeys = ["HB_skip0", "HB_skip1", "HB_skip2", "HB_skip3"];
+
     private static readonly (string Prefab, string Label)[] RequiredStations =
     [
         ("piece_workbench", "$piece_workbench"),
@@ -462,7 +468,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
         _timer = 0f;
 
-        // Follows the setting, so a value synced from the server or changed in game applies straight away.
+        // The prefab is set up at the main menu, before a server's synced value arrives; this makes bubbles use it.
         _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
 
         ZDO zdo = _nview.GetZDO();
@@ -531,7 +537,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         for (int i = 0; i < StationKeys.Length; i++)
         {
             ZDOID id = zdo.GetZDOID(StationKeys[i]);
-            if (id == ZDOID.None)
+            if (id == ZDOID.None || (mask & (1 << i)) != 0)
             {
                 continue;
             }
@@ -540,11 +546,16 @@ internal sealed class HomeBubbleZone : MonoBehaviour
             _missChecks[i] = gone ? _missChecks[i] + 1 : 0;
             if (_missChecks[i] >= MissChecksBeforeCollapse)
             {
+                // Just lost: whatever already serves the bubble now can't replace it, so the bubble goes down.
                 newMask |= 1 << i;
+                List<ZDOID> existing = ServingStations(i, transform.position);
+                zdo.Set(SkipKeys[i], string.Join(";", existing.ConvertAll(Format)));
+                HomeBubblePlugin.Log.LogInfo("Home Bubble lost its " + RequiredStations[i].Prefab + "; the bubble is down until one is "
+                    + "built in range (" + existing.Count + " already in range can't stand in for it)");
             }
         }
 
-        // Look for a rebuilt station to stand in for each one that is gone.
+        // Look for a station built since the loss to stand in for each one that is gone.
         if (newMask != 0)
         {
             HashSet<ZDOID> claimed = ClaimedStations();
@@ -554,12 +565,15 @@ internal sealed class HomeBubbleZone : MonoBehaviour
                 {
                     continue;
                 }
-                CraftingStation replacement = FindUnclaimedStation(i, transform.position, claimed);
+                HashSet<ZDOID> excluded = [.. claimed, .. Parse(zdo.GetString(SkipKeys[i], ""))];
+                CraftingStation replacement = FindUnclaimedStation(i, transform.position, excluded);
                 if (replacement != null)
                 {
                     zdo.Set(StationKeys[i], replacement.GetComponent<ZNetView>().GetZDO().m_uid);
+                    zdo.Set(SkipKeys[i], "");
                     newMask &= ~(1 << i);
                     _missChecks[i] = 0;
+                    HomeBubblePlugin.Log.LogInfo("Home Bubble claimed a rebuilt " + RequiredStations[i].Prefab + "; the bubble is back up");
                 }
             }
         }
@@ -567,6 +581,56 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         if (newMask != mask)
         {
             zdo.Set(BrokenKey, newMask);
+        }
+    }
+
+    /// <summary>Every station of the required type that serves the point now, in plain or extended build range.</summary>
+    private static List<ZDOID> ServingStations(int index, Vector3 point)
+    {
+        List<ZDOID> ids = [];
+        string stationName = null;
+        foreach (CraftingStation station in CraftingStation.m_allStations)
+        {
+            if (station == null || Utils.GetPrefabName(station.gameObject) != RequiredStations[index].Prefab)
+            {
+                continue;
+            }
+            stationName = station.m_name;
+            Vector3 flat = point;
+            flat.y = station.transform.position.y; // build range ignores height, like vanilla
+            ZNetView view = station.GetComponent<ZNetView>();
+            if (view != null && view.IsValid() && Vector3.Distance(station.transform.position, flat) < station.GetStationBuildRange())
+            {
+                ids.Add(view.GetZDO().m_uid);
+            }
+        }
+
+        CraftingStation buildable = stationName != null ? CraftingStation.HaveBuildStationInRange(stationName, point) : null;
+        ZNetView buildableView = buildable != null ? buildable.GetComponent<ZNetView>() : null;
+        if (buildableView != null && buildableView.IsValid() && !ids.Contains(buildableView.GetZDO().m_uid))
+        {
+            ids.Add(buildableView.GetZDO().m_uid);
+        }
+        return ids;
+    }
+
+    private static string Format(ZDOID id)
+    {
+        return id.UserID.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":"
+            + id.ID.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static IEnumerable<ZDOID> Parse(string ids)
+    {
+        foreach (string entry in ids.Split([';'], System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            string[] parts = entry.Split(':');
+            if (parts.Length == 2
+                && long.TryParse(parts[0], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long user)
+                && uint.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out uint id))
+            {
+                yield return new ZDOID(user, id);
+            }
         }
     }
 
@@ -602,6 +666,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         {
             zdo.Set(StationKeys[i], stations[i].GetComponent<ZNetView>().GetZDO().m_uid);
         }
+        HomeBubblePlugin.Log.LogInfo("Home Bubble claimed its Workbench, Forge, Stonecutter and Artisan Table");
     }
 
     /// <summary>The radius from the claimed stations' upgrades, or null if any of them is not loaded.</summary>
