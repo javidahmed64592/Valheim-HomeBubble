@@ -34,6 +34,18 @@ Rebuild the station within range and it comes back.
 ## Configuration
 
 Settings are in the BepInEx config file `javidahmed64592.homebubble.cfg`.
+Settings marked "(Synced with server)" use the server's values when the server has the mod installed.
+
+## Compatibility
+
+- The bubble is built from the vanilla Shield Generator, so mods that change the Shield Generator may change the bubble too.
+- Mods that change how monsters avoid safe zones, such as the trader's camp, may change how the bubble keeps them out.
+- This mod has not been tested with a gamepad, only with keyboard and mouse.
+
+## Uninstalling
+
+Home Bubbles disappear from the world when the mod is removed, along with any bones in them.
+Deconstruct them first to get their materials back.
 
 ## License
 

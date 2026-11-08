@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>HomeBubble</AssemblyName>
     <Description>Keep enemies out of your base with a protective bubble.</Description>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
@@ -21,6 +21,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Translations/<Language>.json, embedded and loaded by Translations.Load. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Translations\*.json" LogicalName="HomeBubble.Translations.%(Filename).json" />
+  </ItemGroup>
+
   <!-- In CI (GitHub Actions) there is no local Valheim install, so game/BepInEx DLLs
        come from NuGet packages instead. Locally they come from ValheimDir (see Directory.Build.props). -->
   <ItemGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
@@ -29,6 +34,10 @@
          into your output folder or redistributed with the mod. -->
     <Reference Include="0Harmony">
       <HintPath>$(BepInExCoreDir)/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_guiutils">
+      <HintPath>$(ManagedDir)/assembly_guiutils.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="assembly_utils">

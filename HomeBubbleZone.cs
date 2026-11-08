@@ -23,6 +23,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private const string DrainTimeKey = "HB_lastDrain";
     private const float DrainInterval = 10f;
     private const string OffKey = "HB_off";
+    private const string ToggleRpc = "HB_Toggle";
     /// <summary>
     /// fraction of the fuel range the look catches up per second
     /// </summary>
@@ -41,10 +42,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
     private static readonly (string Prefab, string Label)[] RequiredStations =
     [
-        ("piece_workbench", "Workbench"),
-        ("forge", "Forge"),
-        ("piece_stonecutter", "Stonecutter"),
-        ("piece_artisanstation", "Artisan Table"),
+        ("piece_workbench", "$piece_workbench"),
+        ("forge", "$piece_forge"),
+        ("piece_stonecutter", "$piece_stonecutter"),
+        ("piece_artisanstation", "$piece_artisanstation"),
     ];
 
     /// <summary>
@@ -127,6 +128,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
         SetUpFieldLook();
+        _nview.Register(ToggleRpc, RPC_Toggle);
 
         Instances.Add(this);
         if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
@@ -276,14 +278,22 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
     }
 
-    /// <summary>Switches the bubble on or off. Anyone can ask; the owner of the generator's data keeps the setting.</summary>
+    /// <summary>Asks the owner of the generator's data to switch the bubble on or off (access is checked by the caller).</summary>
     public void Toggle()
     {
-        if (_nview == null || !_nview.IsValid())
+        if (_nview != null && _nview.IsValid())
+        {
+            _nview.InvokeRPC(ToggleRpc);
+        }
+    }
+
+    /// <summary>Only the owner writes the setting, so two players toggling at once can't overwrite each other.</summary>
+    private void RPC_Toggle(long sender)
+    {
+        if (!_nview.IsValid() || !_nview.IsOwner())
         {
             return;
         }
-        _nview.ClaimOwnership();
         ZDO zdo = _nview.GetZDO();
         bool off = !zdo.GetBool(OffKey, false);
         zdo.Set(OffKey, off);
@@ -452,6 +462,9 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
         _timer = 0f;
 
+        // Follows the setting, so a value synced from the server or changed in game applies straight away.
+        _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
+
         ZDO zdo = _nview.GetZDO();
         if (_nview.IsOwner())
         {
@@ -503,7 +516,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
                 labels.Add(RequiredStations[i].Label);
             }
         }
-        stationLabels = string.Join(" and ", labels);
+        stationLabels = string.Join(", ", labels);
         return mask != 0;
     }
 
@@ -825,8 +838,8 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
 
         problem = missing.Count > 0
-            ? "Home Bubble needs these in range: " + string.Join(", ", missing)
-            : "Already covered by another Home Bubble: " + string.Join(", ", claimedLabels);
+            ? Localization.instance.Localize("$homebubble_needs_stations", Localization.instance.Localize(string.Join(", ", missing)))
+            : Localization.instance.Localize("$homebubble_stations_claimed", Localization.instance.Localize(string.Join(", ", claimedLabels)));
         return false;
     }
 }

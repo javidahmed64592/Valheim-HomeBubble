@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+- Switching a bubble on or off with Shift + E now needs access to any ward it stands in, like opening a chest, so other players can't turn off your bubble.
+- The switch is now handled by whoever's game is looking after the generator, so two players toggling at once can't overwrite each other.
+- `BaseRadius`, `FullRadius`, `MinutesPerBone` and `MaxFuel` are now synced from the server, so every player sees the same bubble size and fuel use.
+- `MaxFuel` now applies straight away, without a restart.
+- The hover hint now shows your own key bindings instead of always saying Shift + E.
+- The piece, messages and hover text can now be translated (`Translations/English.json`), and the station names use the game's own translations.
+- Added a CI check that the version matches in every file.
+
 ## 0.4.0
 
 - Overlapping bubbles now merge into one outer surface, like the vanilla shield generators, instead of showing each other's walls from the inside.

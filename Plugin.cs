@@ -17,7 +17,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
 {
     public const string PluginGUID = "javidahmed64592.homebubble";
     public const string PluginName = "Home Bubble";
-    public const string PluginVersion = "0.4.0";
+    public const string PluginVersion = "0.5.0";
 
     internal static BepInEx.Logging.ManualLogSource Log { get; private set; }
 
@@ -27,6 +27,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
     {
         Log = Logger;
         BubbleConfig.Bind(Config);
+        Translations.Load();
 
         _harmony = new Harmony(PluginGUID);
         _harmony.PatchAll();
@@ -69,17 +70,17 @@ internal static class BubbleConfig
     public static void Bind(ConfigFile config)
     {
         BaseRadius = config.Bind("Bubble", "BaseRadius", 24f,
-            new ConfigDescription("Radius (metres) of a bubble whose crafting stations have no upgrades.",
-                new AcceptableValueRange<float>(5f, 200f)));
+            new ConfigDescription("Radius (metres) of a bubble whose crafting stations have no upgrades. (Synced with server)",
+                new AcceptableValueRange<float>(5f, 200f), Synced()));
         FullRadius = config.Bind("Bubble", "FullRadius", 48f,
-            new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's crafting stations.",
-                new AcceptableValueRange<float>(5f, 200f)));
+            new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's crafting stations. (Synced with server)",
+                new AcceptableValueRange<float>(5f, 200f), Synced()));
         MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
-            new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits.",
-                new AcceptableValueRange<float>(0f, 600f)));
+            new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits. (Synced with server)",
+                new AcceptableValueRange<float>(0f, 600f), Synced()));
         MaxFuel = config.Bind("Bubble", "MaxFuel", 50,
-            new ConfigDescription("The most bones the generator can hold. Takes effect after a restart.",
-                new AcceptableValueRange<int>(1, 1000)));
+            new ConfigDescription("The most bones the generator can hold. (Synced with server)",
+                new AcceptableValueRange<int>(1, 1000), Synced()));
 
         Visibility = config.Bind("Look", "Distortion", 4f,
             new ConfigDescription("How strongly the bubble warps what you see through it.",
@@ -89,5 +90,11 @@ internal static class BubbleConfig
         TintOpacity = config.Bind("Look", "TintOpacity", 0.06f,
             new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                 new AcceptableValueRange<float>(0f, 0.6f)));
+    }
+
+    /// <summary>Settings that use the server's value when the server has the mod.</summary>
+    private static ConfigurationManagerAttributes Synced()
+    {
+        return new ConfigurationManagerAttributes { IsAdminOnly = true };
     }
 }
