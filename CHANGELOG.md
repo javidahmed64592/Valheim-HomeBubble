@@ -2,8 +2,8 @@
 
 ## 0.5.0
 
-- Fixed a destroyed Workbench, Forge, Stonecutter or Artisan Table not bringing the bubble down when another station of that type was in range. The bubble switched to that station and changed size instead, and then ignored the station when it was rebuilt. Now the bubble goes down, and only a station built afterwards brings it back.
-- The BepInEx log now says when a bubble claims its stations, loses one, and claims a rebuilt one.
+- The bubble now always uses the most upgraded station of each type in range, like BenchLink picks a cluster's station, and its size follows. This includes the optional Black Forge and Galdr Table. Previously a destroyed station was replaced by whichever unclaimed station was closest, and the bubble never switched to a better one, such as the original station once it was rebuilt.
+- The BepInEx log now says when a bubble claims its stations, switches to a different station, and goes down because none is left.
 - Switching a bubble on or off with Shift + E now needs access to any ward it stands in, like opening a chest, so other players can't turn off your bubble.
 - The switch is now handled by whoever's game is looking after the generator, so two players toggling at once can't overwrite each other.
 - `BaseRadius`, `FullRadius`, `MinutesPerBone` and `MaxFuel` are now synced from the server, so every player sees the same bubble size and fuel use.
