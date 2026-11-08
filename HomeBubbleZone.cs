@@ -84,6 +84,19 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// </summary>
     private float _lowFuelLoopStart;
 
+    /// <summary>
+    /// The field's own sphere, and the trimmed copy shown while other bubbles overlap this one.
+    /// </summary>
+    private Mesh _baseMesh;
+    private Mesh _mergedMesh;
+    private MeshFilter[] _fieldFilters = [];
+    private readonly List<Plane> _cuts = [];
+    /// <summary>
+    /// the centres and radii the merged mesh was last built for (this bubble first), to skip unneeded rebuilds
+    /// </summary>
+    private readonly List<Vector4> _mergeKey = [];
+    private readonly List<Vector4> _newMergeKey = [];
+
     private void Start()
     {
         if (Player.IsPlacementGhost(gameObject))
@@ -106,6 +119,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         if (mesh != null && mesh.sharedMesh != null)
         {
             _fieldUnitRadius = Mathf.Max(0.01f, mesh.sharedMesh.bounds.extents.x);
+            _baseMesh = mesh.sharedMesh;
+            Transform shell = _field.Find("HB_Shell");
+            MeshFilter shellMesh = shell ? shell.GetComponent<MeshFilter>() : null;
+            _fieldFilters = shellMesh != null ? [mesh, shellMesh] : [mesh];
         }
 
         _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
@@ -128,6 +145,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         if (_shellMaterial != null)
         {
             Destroy(_shellMaterial);
+        }
+        if (_mergedMesh != null)
+        {
+            Destroy(_mergedMesh);
         }
     }
 
@@ -304,7 +325,121 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
             _field.position = _shield.m_shieldDome.transform.position;
             _field.localScale = Vector3.one * (radius / _fieldUnitRadius);
+            UpdateMerge();
         }
+    }
+
+    /// <summary>True while this bubble's force field is drawn. Read from state set in Update, so it is the
+    /// same for every bubble's LateUpdate whatever order they run in.</summary>
+    private bool FieldShown => _field != null && _shield != null && _shield.m_shieldDome != null
+        && _shield.m_radius > 0.1f && !_collapsed && !IsOff;
+
+    /// <summary>
+    /// Like overlapping vanilla shields, overlapping bubbles show one outer surface: each bubble hides the
+    /// part of its sphere that is inside another bubble. Two spheres always meet along a circle on a flat
+    /// plane, so the hidden part is whatever lies beyond that plane.
+    /// </summary>
+    private void UpdateMerge()
+    {
+        if (_baseMesh == null)
+        {
+            return;
+        }
+
+        Vector3 center = _shield.m_shieldDome.transform.position;
+        float radius = _shield.m_radius;
+        bool hidden = false;
+        _newMergeKey.Clear();
+        _newMergeKey.Add(new Vector4(center.x, center.y, center.z, radius));
+        _cuts.Clear();
+
+        foreach (HomeBubbleZone other in Instances)
+        {
+            if (other == this || !other.FieldShown)
+            {
+                continue;
+            }
+
+            Vector3 otherCenter = other._shield.m_shieldDome.transform.position;
+            float otherRadius = other._shield.m_radius;
+            Vector3 offset = otherCenter - center;
+            float distance = offset.magnitude;
+            if (distance >= radius + otherRadius)
+            {
+                continue; // apart
+            }
+
+            bool insideOther = distance + radius <= otherRadius + 0.01f;
+            bool containsOther = distance + otherRadius <= radius + 0.01f;
+            if (containsOther && !insideOther)
+            {
+                continue; // the other bubble is wholly inside this one and does not touch its surface
+            }
+
+            _newMergeKey.Add(new Vector4(otherCenter.x, otherCenter.y, otherCenter.z, otherRadius));
+            if (insideOther)
+            {
+                // Wholly inside the other bubble; two bubbles of the same size and place keep just one.
+                hidden |= !containsOther || GetInstanceID() > other.GetInstanceID();
+                continue;
+            }
+
+            Vector3 normal = offset / distance;
+            float alongNormal = ((distance * distance) + (radius * radius) - (otherRadius * otherRadius)) / (2f * distance);
+            Vector3 localPoint = _field.InverseTransformPoint(center + (normal * alongNormal));
+            Vector3 localNormal = _field.InverseTransformDirection(normal).normalized;
+            _cuts.Add(new Plane(localNormal, localPoint));
+        }
+
+        if (SameMergeKey())
+        {
+            return;
+        }
+        _mergeKey.Clear();
+        _mergeKey.AddRange(_newMergeKey);
+
+        Mesh shown = _baseMesh;
+        if (hidden || _cuts.Count > 0)
+        {
+            if (_mergedMesh == null)
+            {
+                _mergedMesh = new Mesh { name = "HB_MergedField" };
+                _mergedMesh.MarkDynamic();
+            }
+            if (hidden)
+            {
+                _mergedMesh.Clear();
+            }
+            else
+            {
+                FieldClipper.Build(_baseMesh, _cuts, _mergedMesh);
+            }
+            shown = _mergedMesh;
+        }
+
+        foreach (MeshFilter filter in _fieldFilters)
+        {
+            if (filter.sharedMesh != shown)
+            {
+                filter.sharedMesh = shown;
+            }
+        }
+    }
+
+    private bool SameMergeKey()
+    {
+        if (_mergeKey.Count != _newMergeKey.Count)
+        {
+            return false;
+        }
+        for (int i = 0; i < _mergeKey.Count; i++)
+        {
+            if ((_mergeKey[i] - _newMergeKey[i]).sqrMagnitude > 1e-6f)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void Update()

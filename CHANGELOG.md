@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Overlapping bubbles now merge into one outer surface, like the vanilla shield generators, instead of showing each other's walls from the inside.
+
 ## 0.3.3
 
 - The bubble now also grows as the Black Forge and Galdr Table in range are upgraded. They are still not required to build the bubble or keep it up.
