@@ -9,6 +9,7 @@
 - The hover hint now shows your own key bindings instead of always saying Shift + E.
 - The piece, messages and hover text can now be translated (`Translations/English.json`), and the station names use the game's own translations.
 - Added a CI check that the version matches in every file.
+- Moved `package.sh` into `.github/scripts` and made it the same for every mod: the name, version and DLL now come from `manifest.json` and the `.csproj`.
 
 ## 0.4.0
 
