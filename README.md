@@ -34,7 +34,6 @@ Rebuild the station within range and it comes back.
 ## Configuration
 
 Settings are in the BepInEx config file `javidahmed64592.homebubble.cfg`.
-You can change the bubble's size with and without upgrades, how long a bone lasts, how much fuel the generator holds, and the bubble's colour, opacity and distortion.
 
 ## License
 
