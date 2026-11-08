@@ -5,7 +5,7 @@
 # HomeBubble
 
 Keep enemies out of your base with a protective bubble.
-The bubble even protects against projectiles and rain.
+The bubble even protects against projectiles and rain, and overlapping bubbles merge into one.
 Keep the bubble generator fuelled with bones, and toggle it on and off with `Shift + E`.
 
 ![Small Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/game_screenshot_1.png)
@@ -34,7 +34,6 @@ Rebuild the station within range and it comes back.
 ## Configuration
 
 Settings are in the BepInEx config file `javidahmed64592.homebubble.cfg`.
-You can change the bubble's size with and without upgrades, how long a bone lasts, how much fuel the generator holds, and the bubble's colour, opacity and distortion.
 
 ## License
 
