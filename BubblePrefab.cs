@@ -30,7 +30,7 @@ internal static class BubblePrefab
         ShieldGenerator shield = clone.GetComponentInChildren<ShieldGenerator>(true);
         shield.m_enableAttack = false;
         shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
-        shield.m_name = "Home Bubble"; // the hover text, in place of "$piece_shieldgenerator"
+        shield.m_name = "$piece_homebubble"; // the hover text, in place of "$piece_shieldgenerator"
 
         // Stand-in the no-monster patches hand back to the AI so monsters have something to flee from.
         GameObject marker = new("HB_Area");
@@ -46,8 +46,8 @@ internal static class BubblePrefab
 
         PieceConfig config = new()
         {
-            Name = "Home Bubble",
-            Description = "A protective bubble for your base. Monsters keep out, but you can still build inside. Needs a Workbench, Forge, Stonecutter and Artisan Table nearby, and grows as they are upgraded, and as a Black Forge and Galdr Table nearby are upgraded too. Fuelled by bones.",
+            Name = "$piece_homebubble",
+            Description = "$piece_homebubble_description",
             PieceTable = "Hammer",
             Category = "Defence",
             CraftingStation = "",

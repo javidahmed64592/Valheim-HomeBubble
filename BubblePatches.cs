@@ -111,16 +111,17 @@ internal static class HoverFuelPatch
 
         if (bubble.IsCollapsed(out string station))
         {
-            __result = "Home Bubble\n<color=red>" + CollapseText.For(station) + "</color>";
+            __result = Localization.instance.Localize("$piece_homebubble") + "\n<color=red>" + CollapseText.For(station) + "</color>";
             return;
         }
 
-        string state = bubble.IsOff ? "Turn on" : "Turn off";
-        __result += "\n[<color=yellow><b>Shift + E</b></color>] " + state;
+        string state = bubble.IsOff ? "$homebubble_turn_on" : "$homebubble_turn_off";
+        string text = "\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] " + state;
         if (bubble.IsOff)
         {
-            __result += "\n<color=red>Switched off</color>";
+            text += "\n<color=red>$homebubble_switched_off</color>";
         }
+        __result += Localization.instance.Localize(text);
     }
 }
 
@@ -151,7 +152,8 @@ internal static class ToggleBubblePatch
             return true;
         }
 
-        if (!hold)
+        // Like opening a chest: someone else's ward keeps you from switching the bubble off.
+        if (!hold && PrivateArea.CheckAccess(bubble.transform.position))
         {
             bubble.Toggle();
         }
@@ -164,6 +166,6 @@ internal static class CollapseText
 {
     public static string For(string station)
     {
-        return "The bubble is down because its " + station + " was destroyed. Rebuild it nearby to bring the bubble back.";
+        return Localization.instance.Localize("$homebubble_collapsed", Localization.instance.Localize(station));
     }
 }

@@ -23,6 +23,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private const string DrainTimeKey = "HB_lastDrain";
     private const float DrainInterval = 10f;
     private const string OffKey = "HB_off";
+    private const string ToggleRpc = "HB_Toggle";
     /// <summary>
     /// fraction of the fuel range the look catches up per second
     /// </summary>
@@ -41,10 +42,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
     private static readonly (string Prefab, string Label)[] RequiredStations =
     [
-        ("piece_workbench", "Workbench"),
-        ("forge", "Forge"),
-        ("piece_stonecutter", "Stonecutter"),
-        ("piece_artisanstation", "Artisan Table"),
+        ("piece_workbench", "$piece_workbench"),
+        ("forge", "$piece_forge"),
+        ("piece_stonecutter", "$piece_stonecutter"),
+        ("piece_artisanstation", "$piece_artisanstation"),
     ];
 
     /// <summary>
@@ -127,6 +128,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
         SetUpFieldLook();
+        _nview.Register(ToggleRpc, RPC_Toggle);
 
         Instances.Add(this);
         if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
@@ -276,14 +278,22 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
     }
 
-    /// <summary>Switches the bubble on or off. Anyone can ask; the owner of the generator's data keeps the setting.</summary>
+    /// <summary>Asks the owner of the generator's data to switch the bubble on or off (access is checked by the caller).</summary>
     public void Toggle()
     {
-        if (_nview == null || !_nview.IsValid())
+        if (_nview != null && _nview.IsValid())
+        {
+            _nview.InvokeRPC(ToggleRpc);
+        }
+    }
+
+    /// <summary>Only the owner writes the setting, so two players toggling at once can't overwrite each other.</summary>
+    private void RPC_Toggle(long sender)
+    {
+        if (!_nview.IsValid() || !_nview.IsOwner())
         {
             return;
         }
-        _nview.ClaimOwnership();
         ZDO zdo = _nview.GetZDO();
         bool off = !zdo.GetBool(OffKey, false);
         zdo.Set(OffKey, off);
@@ -452,6 +462,9 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
         _timer = 0f;
 
+        // The prefab is set up at the main menu, before a server's synced value arrives; this makes bubbles use it.
+        _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
+
         ZDO zdo = _nview.GetZDO();
         if (_nview.IsOwner())
         {
@@ -503,58 +516,112 @@ internal sealed class HomeBubbleZone : MonoBehaviour
                 labels.Add(RequiredStations[i].Label);
             }
         }
-        stationLabels = string.Join(" and ", labels);
+        stationLabels = string.Join(", ", labels);
         return mask != 0;
     }
 
     /// <summary>
-    /// A claimed station whose object no longer exists anywhere (not merely unloaded) has been destroyed,
-    /// which brings the bubble down. Building a replacement in range brings it back.
+    /// Keeps each of the bubble's four stations the best one available, like BenchLink picks a cluster's station:
+    /// the most upgraded station of that type serving the bubble that no other bubble has claimed. A better one
+    /// (say, a rebuilt and upgraded Workbench) takes over, and the bubble's size follows. If a station is
+    /// destroyed and no other serves the bubble, the bubble goes down until one is built.
     /// </summary>
     private void CheckStationsStillStand(ZDO zdo)
     {
         int mask = zdo.GetInt(BrokenKey, 0);
         int newMask = mask;
+        HashSet<ZDOID> claimedByOthers = ClaimedStations(this);
         for (int i = 0; i < StationKeys.Length; i++)
         {
-            ZDOID id = zdo.GetZDOID(StationKeys[i]);
-            if (id == ZDOID.None)
+            ZDOID current = zdo.GetZDOID(StationKeys[i]);
+            bool loaded = current != ZDOID.None && ZNetScene.instance.FindInstance(current) != null;
+            bool gone = current == ZDOID.None || (!loaded && ZDOMan.instance.GetZDO(current) == null);
+            _missChecks[i] = gone ? _missChecks[i] + 1 : 0;
+
+            // A station that exists but isn't loaded yet (its area is still loading) is kept as it is.
+            if (!loaded && _missChecks[i] < MissChecksBeforeCollapse)
             {
                 continue;
             }
 
-            bool gone = ZNetScene.instance.FindInstance(id) == null && ZDOMan.instance.GetZDO(id) == null;
-            _missChecks[i] = gone ? _missChecks[i] + 1 : 0;
-            if (_missChecks[i] >= MissChecksBeforeCollapse)
+            CraftingStation best = FindBestStation(i, transform.position, claimedByOthers, current);
+            if (best == null)
             {
-                newMask |= 1 << i;
+                if (gone && (mask & (1 << i)) == 0)
+                {
+                    newMask |= 1 << i;
+                    HomeBubblePlugin.Log.LogInfo("Home Bubble lost its " + RequiredStations[i].Prefab
+                        + " and none is left in range: the bubble is down until one is built");
+                }
+                continue;
             }
-        }
 
-        // Look for a rebuilt station to stand in for each one that is gone.
-        if (newMask != 0)
-        {
-            HashSet<ZDOID> claimed = ClaimedStations();
-            for (int i = 0; i < StationKeys.Length; i++)
+            ZDOID bestId = best.GetComponent<ZNetView>().GetZDO().m_uid;
+            if (bestId != current)
             {
-                if ((newMask & (1 << i)) == 0)
-                {
-                    continue;
-                }
-                CraftingStation replacement = FindUnclaimedStation(i, transform.position, claimed);
-                if (replacement != null)
-                {
-                    zdo.Set(StationKeys[i], replacement.GetComponent<ZNetView>().GetZDO().m_uid);
-                    newMask &= ~(1 << i);
-                    _missChecks[i] = 0;
-                }
+                zdo.Set(StationKeys[i], bestId);
+                _missChecks[i] = 0;
+                HomeBubblePlugin.Log.LogInfo("Home Bubble now uses the " + RequiredStations[i].Prefab + " with "
+                    + CountUpgrades(best) + " upgrade(s)" + (gone ? ", replacing one that was destroyed" : ""));
             }
+            newMask &= ~(1 << i);
         }
 
         if (newMask != mask)
         {
             zdo.Set(BrokenKey, newMask);
         }
+    }
+
+    /// <summary>
+    /// The most upgraded station of the required type that serves the point, in plain or extended build range
+    /// (e.g. BenchLink), and that no other bubble claims. Ties go to the bigger build range, then the station
+    /// already in use, then the closest. Null if there is none.
+    /// </summary>
+    private static CraftingStation FindBestStation(int index, Vector3 point, HashSet<ZDOID> claimedByOthers, ZDOID current)
+    {
+        List<CraftingStation> candidates = [];
+        string stationName = null;
+        foreach (CraftingStation station in CraftingStation.m_allStations)
+        {
+            if (station == null || Utils.GetPrefabName(station.gameObject) != RequiredStations[index].Prefab)
+            {
+                continue;
+            }
+            stationName = station.m_name;
+            Vector3 flat = point;
+            flat.y = station.transform.position.y; // build range ignores height, like vanilla
+            if (Vector3.Distance(station.transform.position, flat) < station.GetStationBuildRange())
+            {
+                candidates.Add(station);
+            }
+        }
+
+        CraftingStation buildable = stationName != null ? CraftingStation.HaveBuildStationInRange(stationName, point) : null;
+        if (buildable != null && !candidates.Contains(buildable))
+        {
+            candidates.Add(buildable);
+        }
+
+        CraftingStation best = null;
+        (int upgrades, float range, bool isCurrent, float closeness) bestScore = default;
+        foreach (CraftingStation station in candidates)
+        {
+            ZNetView view = station.GetComponent<ZNetView>();
+            if (view == null || !view.IsValid() || claimedByOthers.Contains(view.GetZDO().m_uid))
+            {
+                continue;
+            }
+
+            (int, float, bool, float) score = (CountUpgrades(station), station.GetStationBuildRange(), view.GetZDO().m_uid == current,
+                -Utils.DistanceXZ(station.transform.position, point));
+            if (best == null || score.CompareTo(bestScore) > 0)
+            {
+                best = station;
+                bestScore = score;
+            }
+        }
+        return best;
     }
 
     /// <summary>Burns bones over time. Uses world time so a bubble keeps burning while nobody is near it.</summary>
@@ -589,6 +656,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         {
             zdo.Set(StationKeys[i], stations[i].GetComponent<ZNetView>().GetZDO().m_uid);
         }
+        HomeBubblePlugin.Log.LogInfo("Home Bubble claimed its Workbench, Forge, Stonecutter and Artisan Table");
     }
 
     /// <summary>The radius from the claimed stations' upgrades, or null if any of them is not loaded.</summary>
@@ -625,11 +693,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         return (float)Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress);
     }
 
-    /// <summary>The closest station of an optional type that serves the point, or null if there is none.</summary>
+    /// <summary>The most upgraded station of an optional type that serves the point (closest on a tie), or null if there is none.</summary>
     private static CraftingStation FindOptionalStation(string prefab, Vector3 point)
     {
         CraftingStation best = null;
-        float bestDistance = float.MaxValue;
+        (int upgrades, float closeness) bestScore = default;
         foreach (CraftingStation station in CraftingStation.m_allStations)
         {
             if (station == null || Utils.GetPrefabName(station.gameObject) != prefab)
@@ -639,10 +707,15 @@ internal sealed class HomeBubbleZone : MonoBehaviour
             Vector3 flat = point;
             flat.y = station.transform.position.y; // build range ignores height, like vanilla
             float distance = Vector3.Distance(station.transform.position, flat);
-            if (distance < station.GetStationBuildRange() && distance < bestDistance)
+            if (distance >= station.GetStationBuildRange())
             {
-                bestDistance = distance;
+                continue;
+            }
+            (int, float) score = (CountUpgrades(station), -distance);
+            if (best == null || score.CompareTo(bestScore) > 0)
+            {
                 best = station;
+                bestScore = score;
             }
         }
         return best;
@@ -723,12 +796,12 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// Stations spoken for by bubbles. A collapsed bubble keeps its surviving stations reserved so it can
     /// come back when the missing one is rebuilt; deconstruct it to free them.
     /// </summary>
-    private static HashSet<ZDOID> ClaimedStations()
+    private static HashSet<ZDOID> ClaimedStations(HomeBubbleZone except = null)
     {
         HashSet<ZDOID> claimed = [];
         foreach (HomeBubbleZone bubble in Instances)
         {
-            if (bubble == null || !bubble._nview.IsValid())
+            if (bubble == null || bubble == except || !bubble._nview.IsValid())
             {
                 continue;
             }
@@ -825,8 +898,8 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
 
         problem = missing.Count > 0
-            ? "Home Bubble needs these in range: " + string.Join(", ", missing)
-            : "Already covered by another Home Bubble: " + string.Join(", ", claimedLabels);
+            ? Localization.instance.Localize("$homebubble_needs_stations", Localization.instance.Localize(string.Join(", ", missing)))
+            : Localization.instance.Localize("$homebubble_stations_claimed", Localization.instance.Localize(string.Join(", ", claimedLabels)));
         return false;
     }
 }

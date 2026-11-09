@@ -1,0 +1,10 @@
+{
+  "piece_homebubble": "Home Bubble",
+  "piece_homebubble_description": "A protective bubble for your base. Monsters keep out, but you can still build inside. Needs a Workbench, Forge, Stonecutter and Artisan Table nearby, and grows as they are upgraded, and as a Black Forge and Galdr Table nearby are upgraded too. Fuelled by bones.",
+  "homebubble_needs_stations": "Home Bubble needs these in range: $1",
+  "homebubble_stations_claimed": "Already covered by another Home Bubble: $1",
+  "homebubble_collapsed": "The bubble is down because its $1 was destroyed. Rebuild it nearby to bring the bubble back.",
+  "homebubble_turn_on": "Turn on",
+  "homebubble_turn_off": "Turn off",
+  "homebubble_switched_off": "Switched off"
+}

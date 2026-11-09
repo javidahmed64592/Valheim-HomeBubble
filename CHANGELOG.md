@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0
+
+- The bubble now always uses the most upgraded station of each type in range, like BenchLink picks a cluster's station, and its size follows. This includes the optional Black Forge and Galdr Table. Previously a destroyed station was replaced by whichever unclaimed station was closest, and the bubble never switched to a better one, such as the original station once it was rebuilt.
+- The BepInEx log now says when a bubble claims its stations, switches to a different station, and goes down because none is left.
+- Switching a bubble on or off with Shift + E now needs access to any ward it stands in, like opening a chest, so other players can't turn off your bubble.
+- The switch is now handled by whoever's game is looking after the generator, so two players toggling at once can't overwrite each other.
+- `BaseRadius`, `FullRadius`, `MinutesPerBone` and `MaxFuel` are now synced from the server, so every player sees the same bubble size and fuel use.
+- The hover hint now shows your own key bindings instead of always saying Shift + E.
+- The piece, messages and hover text can now be translated (`Translations/English.json`), and the station names use the game's own translations.
+- Added a CI check that the version matches in every file.
+- Moved `package.sh` into `.github/scripts` and made it the same for every mod: the name, version and DLL now come from `manifest.json` and the `.csproj`.
+
 ## 0.4.0
 
 - Overlapping bubbles now merge into one outer surface, like the vanilla shield generators, instead of showing each other's walls from the inside.
