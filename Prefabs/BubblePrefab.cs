@@ -1,10 +1,12 @@
+using HomeBubble.Bubble;
+
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
 
 using UnityEngine;
 
-namespace HomeBubble;
+namespace HomeBubble.Prefabs;
 
 internal static class BubblePrefab
 {

@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 
+using HomeBubble.Prefabs;
+
 using UnityEngine;
 
-namespace HomeBubble;
+namespace HomeBubble.Bubble;
 
 /// <summary>
 /// The behaviour layered on top of the cloned shield generator: it keeps the monsters out like a trader's

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace HomeBubble;
+namespace HomeBubble.Bubble;
 
 /// <summary>
 /// Cuts away the parts of a bubble's sphere that lie inside other bubbles, so overlapping bubbles show one

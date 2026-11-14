@@ -5,7 +5,7 @@ using System.Reflection;
 using Jotunn.Entities;
 using Jotunn.Managers;
 
-namespace HomeBubble;
+namespace HomeBubble.Core;
 
 /// <summary>
 /// Loads every embedded Translations/&lt;Language&gt;.json into Jotunn. Missing languages and keys fall back to English.
