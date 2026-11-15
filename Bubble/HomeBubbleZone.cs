@@ -40,6 +40,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// </summary>
     private const float NoMonsterCloseMargin = 15f;
     /// <summary>
+    /// how far past the edge a monster that strayed inside steps back to
+    /// </summary>
+    private const float ExitClearance = 1.5f;
+    /// <summary>
     /// seconds between low-fuel warnings while the player stays near a bubble
     /// </summary>
     private const float FuelWarningRepeat = 300f;
@@ -595,6 +599,18 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// How far a point is beyond the edge of a bubble, from its saved data alone, so the server can use it for
+    /// bubbles nobody has loaded. Negative inside the bubble. Null if the bubble is down (no bones, switched off
+    /// or collapsed), as it keeps nothing out. Measured flat, so standing on a roof above a bubble counts as inside.
+    /// </summary>
+    public static float? DistanceBeyondEdge(ZDO zdo, Vector3 point)
+    {
+        return zdo.GetFloat(ZDOVars.s_fuel, 0f) <= 0f || zdo.GetBool(OffKey, false) || zdo.GetInt(BrokenKey, 0) != 0
+            ? null
+            : Utils.DistanceXZ(zdo.GetPosition(), point) - zdo.GetFloat(RadiusKey, BubbleConfig.BaseRadius.Value);
+    }
+
     /// <summary>True while any of the bubble's stations is gone; says which ones.</summary>
     public bool IsCollapsed(out string stationLabels)
     {
@@ -869,6 +885,40 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     public static EffectArea FindClose(Vector3 point)
     {
         return Find(point, NoMonsterCloseMargin);
+    }
+
+    /// <summary>The bubble this point is inside, if any.</summary>
+    public static HomeBubbleZone FindBubbleInside(Vector3 point)
+    {
+        foreach (HomeBubbleZone bubble in Instances)
+        {
+            if (bubble != null && bubble.Protects(point, 0f))
+            {
+                return bubble;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The middle of the dome, which monsters flee from.</summary>
+    public Vector3 Centre => _shield.m_shieldDome.transform.position;
+
+    /// <summary>
+    /// The nearest spot just outside the bubble from a point inside it, straight out from the middle, for a monster
+    /// to step back to.
+    /// </summary>
+    public Vector3 ExitPoint(Vector3 from)
+    {
+        Vector3 centre = Centre;
+        Vector3 direction = from - centre;
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.01f)
+        {
+            direction = transform.forward;
+        }
+        Vector3 exit = centre + (direction.normalized * (_shield.m_radius + ExitClearance));
+        exit.y = from.y;
+        return exit;
     }
 
     private static EffectArea Find(Vector3 point, float margin)
