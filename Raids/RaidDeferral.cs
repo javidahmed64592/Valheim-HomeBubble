@@ -25,6 +25,9 @@ internal static class RaidDeferral
     private static readonly List<RandEventSystem.PlayerEventData> Single = [];
     private static float _nextCheck;
 
+    /// <summary>The held-off raid last logged as not able to start where the players are, so it is logged once.</summary>
+    private static RandomEvent _loggedNotAllowed;
+
     public static void BeginAttempt()
     {
         BlockedThisAttempt.Clear();
@@ -116,14 +119,24 @@ internal static class RaidDeferral
             return false;
         }
 
-        // The same checks vanilla makes when it picks a place for a raid: biome, a base nearby if the raid needs
-        // one, the bosses this player has beaten, and the world's raid settings.
+        // The checks vanilla makes when it picks a place for a raid (biome, the bosses this player has beaten, the
+        // world's raid settings), except for a base nearby. That was met when the bubble held the raid off, and
+        // vanilla only counts base pieces within 20 metres of the player, so it could never be met again out here
+        // with the base inside the bubble.
         Single.Clear();
         Single.Add(eventData);
-        bool allowed = _owed.m_enabled && events.HaveGlobalKeys(_owed, Single) && events.GetValidEventPoints(_owed, Single).Count > 0;
+        bool allowed = _owed.m_enabled && events.HaveGlobalKeys(_owed, Single) && events.InValidBiome(_owed, position)
+            && position.y <= 3000f
+            && (!ZoneSystem.instance.GetGlobalKey(GlobalKeys.PlayerEvents) || eventData.possibleEvents.Contains(_owed.m_name));
         Single.Clear();
         if (!allowed)
         {
+            if (_loggedNotAllowed != _owed)
+            {
+                _loggedNotAllowed = _owed;
+                HomeBubblePlugin.Log.LogInfo("A player is clear of the bubbles, but the held-off raid " + _owed.m_name
+                    + " can't happen where they are (wrong biome or bosses not beaten); waiting");
+            }
             return false;
         }
 
