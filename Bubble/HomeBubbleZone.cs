@@ -40,9 +40,9 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// </summary>
     private const float NoMonsterCloseMargin = 15f;
     /// <summary>
-    /// how close to the edge a monster may come, whatever it is chasing, before it turns and flees
+    /// how far past the edge a monster that strayed inside steps back to
     /// </summary>
-    private const float KeepOutMargin = 3f;
+    private const float ExitClearance = 1.5f;
     /// <summary>
     /// seconds between low-fuel warnings while the player stays near a bubble
     /// </summary>
@@ -887,10 +887,38 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         return Find(point, NoMonsterCloseMargin);
     }
 
-    /// <summary>The bubble a monster at this point must flee, if any: inside it or within a few metres of its edge.</summary>
-    public static EffectArea FindKeepingOut(Vector3 point)
+    /// <summary>The bubble this point is inside, if any.</summary>
+    public static HomeBubbleZone FindBubbleInside(Vector3 point)
     {
-        return Find(point, KeepOutMargin);
+        foreach (HomeBubbleZone bubble in Instances)
+        {
+            if (bubble != null && bubble.Protects(point, 0f))
+            {
+                return bubble;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The middle of the dome, which monsters flee from.</summary>
+    public Vector3 Centre => _shield.m_shieldDome.transform.position;
+
+    /// <summary>
+    /// The nearest spot just outside the bubble from a point inside it, straight out from the middle, for a monster
+    /// to step back to.
+    /// </summary>
+    public Vector3 ExitPoint(Vector3 from)
+    {
+        Vector3 centre = Centre;
+        Vector3 direction = from - centre;
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.01f)
+        {
+            direction = transform.forward;
+        }
+        Vector3 exit = centre + (direction.normalized * (_shield.m_radius + ExitClearance));
+        exit.y = from.y;
+        return exit;
     }
 
     private static EffectArea Find(Vector3 point, float margin)
