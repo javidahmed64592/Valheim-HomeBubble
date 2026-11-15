@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using HomeBubble.Bubble;
 
 using Jotunn.Configs;
@@ -14,6 +16,7 @@ internal static class BubblePrefab
     private const string VanillaGenerator = "piece_shieldgenerator";
     private const string TraderLocation = "Vendor_BlackForest";
     public const string ForceFieldName = "HB_ForceField";
+    private const string PoweredHumName = "sfx_shieldgenerator_powered_loop";
 
     private static GameObject _prefab;
 
@@ -33,6 +36,7 @@ internal static class BubblePrefab
         shield.m_enableAttack = false;
         shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
         shield.m_name = "$piece_homebubble"; // the hover text, in place of "$piece_shieldgenerator"
+        RemovePoweredHum(clone);
 
         // Stand-in the no-monster patches hand back to the AI so monsters have something to flee from.
         GameObject marker = new("HB_Area");
@@ -109,6 +113,38 @@ internal static class BubblePrefab
         {
             HomeBubblePlugin.Log.LogError("Failed to attach the trader's force field: " + e);
         }
+    }
+
+    /// <summary>
+    /// Removes the generator's powered hum, so a fuelled bubble is quiet; the low-fuel hum still plays when bones
+    /// run low. Vanilla registers a looping sound again every time it restarts and only forgets it when the object
+    /// is destroyed. A generator fuelled up from empty restarts its hum, so it ends up muted as if it were a copy
+    /// of itself, while one loaded with fuel already in it hums at full volume. Without the hum, both are the same.
+    /// </summary>
+    private static void RemovePoweredHum(GameObject clone)
+    {
+        foreach (Transform child in clone.GetComponentsInChildren<Transform>(true))
+        {
+            if (child.name == PoweredHumName)
+            {
+                Object.DestroyImmediate(child.gameObject);
+                return;
+            }
+        }
+        HomeBubblePlugin.Log.LogWarning("No " + PoweredHumName + " found on the shield generator; the bubble keeps its hum.");
+    }
+
+    /// <summary>
+    /// The renderers of the bubble's dome (the force field, its shell, and the generator's own dome), so the
+    /// Hammer's highlight can leave them out and only light up the generator.
+    /// </summary>
+    public static void RemoveDomeRenderers(Transform root, List<Renderer> renderers)
+    {
+        Transform field = root.Find(ForceFieldName);
+        ShieldGenerator shield = root.GetComponentInChildren<ShieldGenerator>(true);
+        Transform dome = shield != null && shield.m_shieldDome != null ? shield.m_shieldDome.transform : null;
+        _ = renderers.RemoveAll(renderer => renderer != null
+            && ((field != null && renderer.transform.IsChildOf(field)) || (dome != null && renderer.transform.IsChildOf(dome))));
     }
 
     private static Color ParseTint()

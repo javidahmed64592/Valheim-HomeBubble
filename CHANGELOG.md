@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The Hammer's highlight no longer lights up the whole bubble bright blue when you hover over the generator; only the generator itself is highlighted, and it no longer flickers. The generator's glow updated a few times a second and wiped the highlight for a frame each time (vanilla generators do this too), and its glow blinked off when the highlight ended.
+- A fuelled bubble no longer hums. Vanilla muted the generator's powered hum on a bubble fuelled up from empty but played it at full volume after logging back in, so the same bubble was silent one session and loud the next. The low-fuel hum still plays when bones run low.
+- The generator's sounds are quieter. The new `Sound.Volume` setting (default 0.4, where 1 is the vanilla volume) sets how loud they are.
+- You get a message when you are in or near a bubble that is low on bones, and again every 5 minutes while you stay and it stays low. The new `Warnings.LowFuelWarning` setting sets how few bones count as low (default 5, 0 turns it off).
 - Moved the source files into folders (`Core`, `Bubble`, `Prefabs`, `Patches`), leaving only `Plugin.cs` at the root, with each Harmony patch in its own file under `Patches`. No behaviour change.
 
 ## 0.5.0
