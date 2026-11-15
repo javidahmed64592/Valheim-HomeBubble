@@ -595,6 +595,18 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// How far a point is beyond the edge of a bubble, from its saved data alone, so the server can use it for
+    /// bubbles nobody has loaded. Negative inside the bubble. Null if the bubble is down (no bones, switched off
+    /// or collapsed), as it keeps nothing out. Measured flat, so standing on a roof above a bubble counts as inside.
+    /// </summary>
+    public static float? DistanceBeyondEdge(ZDO zdo, Vector3 point)
+    {
+        return zdo.GetFloat(ZDOVars.s_fuel, 0f) <= 0f || zdo.GetBool(OffKey, false) || zdo.GetInt(BrokenKey, 0) != 0
+            ? null
+            : Utils.DistanceXZ(zdo.GetPosition(), point) - zdo.GetFloat(RadiusKey, BubbleConfig.BaseRadius.Value);
+    }
+
     /// <summary>True while any of the bubble's stations is gone; says which ones.</summary>
     public bool IsCollapsed(out string stationLabels)
     {

@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
+- Raids no longer start on players inside a bubble. Before, a raid could start while you were safe inside, and its enemies gathered around the bubble with no way in. A raid that a bubble held off isn't lost: it starts later, once a player has spent 3 minutes at least 30 metres beyond the edge of every bubble, if that raid could happen there. New `Raids` settings, synced with the server: `BlockRaids` and `DeferRaids` (both on), `DeferMinutes` (3) and `DeferDistance` (30). This also works on dedicated servers, where the bubbles near players aren't loaded.
 - The Hammer's highlight no longer lights up the whole bubble bright blue when you hover over the generator; only the generator itself is highlighted, and it no longer flickers. The generator's glow updated a few times a second and wiped the highlight for a frame each time (vanilla generators do this too), and its glow blinked off when the highlight ended.
 - A fuelled bubble no longer hums. Vanilla muted the generator's powered hum on a bubble fuelled up from empty but played it at full volume after logging back in, so the same bubble was silent one session and loud the next. The low-fuel hum still plays when bones run low.
 - The generator's sounds are quieter. The new `Sound.Volume` setting (default 0.4, where 1 is the vanilla volume) sets how loud they are.

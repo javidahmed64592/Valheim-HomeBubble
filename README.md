@@ -32,6 +32,11 @@ A Black Forge and Galdr Table within range make it grow too, but they are never 
 The bubble always uses the most upgraded station of each type in range, so upgrading a different bench of the same type, or building a better one, makes the bubble grow.
 If one of its stations is destroyed, the bubble switches to the next best one in range; if none is left, the bubble goes down until one is built.
 
+## Raids
+
+Raids don't start on players inside a bubble.
+A raid that a bubble holds off happens later instead, once you have spent a few minutes away from every bubble.
+
 ## Configuration
 
 Settings are in the BepInEx config file `javidahmed64592.homebubble.cfg`.

@@ -20,7 +20,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
 {
     public const string PluginGUID = "javidahmed64592.homebubble";
     public const string PluginName = "Home Bubble";
-    public const string PluginVersion = "0.5.0";
+    public const string PluginVersion = "0.6.0";
 
     internal static BepInEx.Logging.ManualLogSource Log { get; private set; }
 
@@ -69,6 +69,10 @@ internal static class BubbleConfig
     public static ConfigEntry<float> Visibility;
     public static ConfigEntry<string> Tint;
     public static ConfigEntry<float> TintOpacity;
+    public static ConfigEntry<bool> BlockRaids;
+    public static ConfigEntry<bool> DeferRaids;
+    public static ConfigEntry<float> DeferMinutes;
+    public static ConfigEntry<float> DeferDistance;
     public static ConfigEntry<float> Volume;
     public static ConfigEntry<int> LowFuelWarning;
 
@@ -95,6 +99,19 @@ internal static class BubbleConfig
         TintOpacity = config.Bind("Look", "TintOpacity", 0.06f,
             new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                 new AcceptableValueRange<float>(0f, 0.6f)));
+
+        BlockRaids = config.Bind("Raids", "BlockRaids", true,
+            new ConfigDescription("Raids don't start on players inside a bubble that is up. (Synced with server)",
+                null, Synced()));
+        DeferRaids = config.Bind("Raids", "DeferRaids", true,
+            new ConfigDescription("A raid that a bubble kept from starting happens later instead, once a player has been far enough from every bubble for long enough. Only used with BlockRaids. (Synced with server)",
+                null, Synced()));
+        DeferMinutes = config.Bind("Raids", "DeferMinutes", 3f,
+            new ConfigDescription("Minutes a player must stay clear of every bubble before a held-off raid starts on them. (Synced with server)",
+                new AcceptableValueRange<float>(0f, 120f), Synced()));
+        DeferDistance = config.Bind("Raids", "DeferDistance", 30f,
+            new ConfigDescription("How many metres beyond the edge of every bubble a player must be for a held-off raid to start on them. (Synced with server)",
+                new AcceptableValueRange<float>(0f, 500f), Synced()));
 
         Volume = config.Bind("Sound", "Volume", 0.4f,
             new ConfigDescription("How loud the bubble generator's sounds are, such as its low-fuel hum. 1 is the vanilla shield generator's volume, 0 is silent.",
