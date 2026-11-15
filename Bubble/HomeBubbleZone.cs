@@ -39,6 +39,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// matches vanilla&#39;s EffectArea &quot;close to&quot; margin
     /// </summary>
     private const float NoMonsterCloseMargin = 15f;
+    /// <summary>
+    /// seconds between low-fuel warnings while the player stays near a bubble
+    /// </summary>
+    private const float FuelWarningRepeat = 300f;
 
     private static readonly string[] StationKeys = ["HB_station0", "HB_station1", "HB_station2", "HB_station3"];
 
@@ -71,6 +75,8 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private float _timer = 10f;
     private float _drainTimer;
     private readonly int[] _missChecks = new int[4];
+    private float _lastFuelWarning = float.NegativeInfinity;
+    private readonly List<ZSFX> _sounds = [];
 
     /// <summary>
     /// Each bubble gets its own copy of the field's materials so its look can follow its own fuel.
@@ -475,6 +481,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         IsOff = zdo.GetBool(OffKey, false);
         _collapsed = IsCollapsed(out _);
+        WarnIfLowOnFuel(zdo);
         if (_collapsed || IsOff)
         {
             // Collapsed or switched off: the dome shrinks away and monsters are no longer kept off (see
@@ -504,6 +511,60 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         float size = zdo.GetFloat(RadiusKey, BubbleConfig.BaseRadius.Value);
         _shield.m_minShieldRadius = size;
         _shield.m_maxShieldRadius = size;
+    }
+
+    /// <summary>
+    /// Tells the local player when they are in or near a bubble that is running low on bones, and again every
+    /// few minutes while they stay and it stays low. A collapsed or switched-off bubble burns nothing, so it
+    /// stays quiet.
+    /// </summary>
+    private void WarnIfLowOnFuel(ZDO zdo)
+    {
+        int threshold = BubbleConfig.LowFuelWarning.Value;
+        Player player = Player.m_localPlayer;
+        if (threshold <= 0 || player == null || _collapsed || IsOff)
+        {
+            return;
+        }
+
+        float fuel = _shield.GetFuel();
+        if (fuel >= threshold)
+        {
+            _lastFuelWarning = float.NegativeInfinity; // warn straight away the next time it runs low
+            return;
+        }
+
+        float size = zdo.GetFloat(RadiusKey, BubbleConfig.BaseRadius.Value);
+        if (Utils.DistanceXZ(player.transform.position, transform.position) > size + NoMonsterCloseMargin
+            || Time.time - _lastFuelWarning < FuelWarningRepeat)
+        {
+            return;
+        }
+
+        _lastFuelWarning = Time.time;
+        int bones = Mathf.CeilToInt(fuel);
+        string text = bones <= 0
+            ? Localization.instance.Localize("$homebubble_out_of_fuel")
+            : Localization.instance.Localize("$homebubble_low_fuel", bones.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        player.Message(MessageHud.MessageType.TopLeft, text);
+    }
+
+    /// <summary>
+    /// Sets the generator's sounds (the low-fuel hum, adding bones) to the configured volume. The generator
+    /// creates them as children of itself, and each one picks up the volume while it plays.
+    /// </summary>
+    public void ApplyVolume()
+    {
+        float volume = BubbleConfig.Volume.Value;
+        GetComponentsInChildren(true, _sounds);
+        foreach (ZSFX sound in _sounds)
+        {
+            if (!Mathf.Approximately(sound.GetVolumeModifier(), volume))
+            {
+                sound.SetVolumeModifier(volume);
+            }
+        }
+        _sounds.Clear();
     }
 
     /// <summary>True while any of the bubble's stations is gone; says which ones.</summary>

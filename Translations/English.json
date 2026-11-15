@@ -6,5 +6,7 @@
   "homebubble_collapsed": "The bubble is down because its $1 was destroyed. Rebuild it nearby to bring the bubble back.",
   "homebubble_turn_on": "Turn on",
   "homebubble_turn_off": "Turn off",
-  "homebubble_switched_off": "Switched off"
+  "homebubble_switched_off": "Switched off",
+  "homebubble_low_fuel": "Home Bubble nearby is low on bones: $1 left",
+  "homebubble_out_of_fuel": "Home Bubble nearby has run out of bones and is down"
 }

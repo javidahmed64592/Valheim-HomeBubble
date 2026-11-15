@@ -69,6 +69,8 @@ internal static class BubbleConfig
     public static ConfigEntry<float> Visibility;
     public static ConfigEntry<string> Tint;
     public static ConfigEntry<float> TintOpacity;
+    public static ConfigEntry<float> Volume;
+    public static ConfigEntry<int> LowFuelWarning;
 
     public static void Bind(ConfigFile config)
     {
@@ -93,6 +95,14 @@ internal static class BubbleConfig
         TintOpacity = config.Bind("Look", "TintOpacity", 0.06f,
             new ConfigDescription("How solid the bubble's coloured surface is. 0 turns it off.",
                 new AcceptableValueRange<float>(0f, 0.6f)));
+
+        Volume = config.Bind("Sound", "Volume", 0.4f,
+            new ConfigDescription("How loud the bubble generator's sounds are, such as its low-fuel hum. 1 is the vanilla shield generator's volume, 0 is silent.",
+                new AcceptableValueRange<float>(0f, 1f)));
+
+        LowFuelWarning = config.Bind("Warnings", "LowFuelWarning", 5,
+            new ConfigDescription("Warn you when you are in or near a bubble with fewer bones than this. 0 turns the warning off.",
+                new AcceptableValueRange<int>(0, 1000)));
     }
 
     /// <summary>Settings that use the server's value when the server has the mod.</summary>
