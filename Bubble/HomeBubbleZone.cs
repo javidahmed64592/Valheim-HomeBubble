@@ -567,6 +567,34 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         _sounds.Clear();
     }
 
+    /// <summary>
+    /// The generator and the Hammer's highlight both set the generator's material properties, and each replaces
+    /// the other's. The highlight is re-applied every frame, but the generator's glow update runs after it a few
+    /// times a second, so the highlight dropped out for a frame at a time and flickered. Called after each glow
+    /// update: while the generator is highlighted, the highlight goes straight back on.
+    /// </summary>
+    public void KeepHighlight()
+    {
+        if (MaterialMan.instance != null
+            && MaterialMan.instance.m_blocks.TryGetValue(gameObject.GetInstanceID(), out MaterialMan.PropertyContainer block)
+            && block.m_shaderProperties.ContainsKey(ShaderProps._Color))
+        {
+            block.UpdateBlock();
+        }
+    }
+
+    /// <summary>
+    /// When the highlight ends, clearing it also clears the generator's glow until its next update. Ask for that
+    /// update now; it runs next frame, after the cleared highlight is applied, so the glow doesn't blink off.
+    /// </summary>
+    public void RestoreGlow()
+    {
+        if (_shield != null && !IsOff)
+        {
+            _shield.Invoke("UpdateShield", 0f);
+        }
+    }
+
     /// <summary>True while any of the bubble's stations is gone; says which ones.</summary>
     public bool IsCollapsed(out string stationLabels)
     {
