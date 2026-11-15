@@ -40,6 +40,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// </summary>
     private const float NoMonsterCloseMargin = 15f;
     /// <summary>
+    /// how close to the edge a monster may come, whatever it is chasing, before it turns and flees
+    /// </summary>
+    private const float KeepOutMargin = 3f;
+    /// <summary>
     /// seconds between low-fuel warnings while the player stays near a bubble
     /// </summary>
     private const float FuelWarningRepeat = 300f;
@@ -881,6 +885,12 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     public static EffectArea FindClose(Vector3 point)
     {
         return Find(point, NoMonsterCloseMargin);
+    }
+
+    /// <summary>The bubble a monster at this point must flee, if any: inside it or within a few metres of its edge.</summary>
+    public static EffectArea FindKeepingOut(Vector3 point)
+    {
+        return Find(point, KeepOutMargin);
     }
 
     private static EffectArea Find(Vector3 point, float margin)
