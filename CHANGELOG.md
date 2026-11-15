@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Moved the source files into folders (`Core`, `Bubble`, `Prefabs`, `Patches`), leaving only `Plugin.cs` at the root, with each Harmony patch in its own file under `Patches`. No behaviour change.
+
 ## 0.5.0
 
 - The bubble now always uses the most upgraded station of each type in range, like BenchLink picks a cluster's station, and its size follows. This includes the optional Black Forge and Galdr Table. Previously a destroyed station was replaced by whichever unclaimed station was closest, and the bubble never switched to a better one, such as the original station once it was rebuilt.

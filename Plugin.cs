@@ -5,6 +5,9 @@ using BepInEx.Configuration;
 
 using HarmonyLib;
 
+using HomeBubble.Core;
+using HomeBubble.Prefabs;
+
 using Jotunn.Managers;
 using Jotunn.Utils;
 
