@@ -1,6 +1,10 @@
+using System.Globalization;
+
 using HarmonyLib;
 
 using HomeBubble.Bubble;
+
+using UnityEngine;
 
 namespace HomeBubble.Patches;
 
@@ -26,6 +30,14 @@ internal static class ShieldGenerator_OnHoverAddFuel_Patch
         if (bubble.IsOff)
         {
             text += "\n<color=red>$homebubble_switched_off</color>";
+        }
+
+        if (BubbleConfig.ResistPerUpgrade.Value > 0f)
+        {
+            int upgrades = bubble.Upgrades;
+            string percent = Mathf.RoundToInt(BubbleConfig.Resistance(upgrades) * 100f).ToString(CultureInfo.InvariantCulture);
+            text += "\n" + Localization.instance.Localize("$homebubble_resistance", percent,
+                upgrades.ToString(CultureInfo.InvariantCulture));
         }
         __result += Localization.instance.Localize(text);
     }

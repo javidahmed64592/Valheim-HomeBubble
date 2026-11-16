@@ -887,6 +887,9 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// <summary>True while the bubble is keeping monsters out: fuelled, switched on and with all its stations.</summary>
     public bool IsUp => !_collapsed && !IsOff && _shield != null && _shield.m_shieldDome != null && Radius > 0.1f;
 
+    /// <summary>How many upgrades the bubble's stations have, as last counted by its owner.</summary>
+    public int Upgrades => _nview != null && _nview.IsValid() ? _nview.GetZDO().GetInt(UpgradesKey, 0) : 0;
+
     /// <summary>The dome's current radius, which follows it as it grows, shrinks or switches off.</summary>
     public float Radius => _shield != null ? _shield.m_radius : 0f;
 

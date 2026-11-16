@@ -9,5 +9,6 @@
   "homebubble_switched_off": "Switched off",
   "homebubble_low_fuel": "Home Bubble nearby is low on bones: $1 left",
   "homebubble_out_of_fuel": "Home Bubble nearby has run out of bones and is down",
-  "homebubble_under_attack": "Home Bubble under attack: $1 bones left"
+  "homebubble_under_attack": "Home Bubble under attack: $1 bones left",
+  "homebubble_resistance": "Damage resistance: $1% ($2 upgrades)"
 }
