@@ -31,6 +31,9 @@ internal static class BubbleSiege
     /// <summary>A target this far from the monster (teleported away, say) ends the siege.</summary>
     private const float MaxTargetDistance = 80f;
 
+    /// <summary>How far past its stand-off spot a monster can be and still attack, in metres.</summary>
+    private const float StandTolerance = 0.5f;
+
     /// <summary>Seconds from the start of a melee swing to when it lands on the wall.</summary>
     private const float MeleeHitDelay = 0.5f;
 
@@ -104,6 +107,7 @@ internal static class BubbleSiege
         state.Until = Time.time + BubbleConfig.SiegeSeconds.Value;
         state.StandOff = standOff;
         state.HitAt = -1f;
+        HomeBubblePlugin.Log.LogInfo(character.m_name + " attacks the bubble, standing " + standOff.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m out");
         return true;
     }
 
@@ -170,12 +174,14 @@ internal static class BubbleSiege
         outward.y = 0f;
         outward = outward.sqrMagnitude < 0.01f ? Vector3.forward : outward.normalized;
 
-        float distance = Utils.DistanceXZ(position, centre);
-        if (distance < radius + 0.3f || distance > radius + state.StandOff + 0.5f)
+        // Anywhere from the wall out to a little past the stand-off spot will do, so a monster that arrives
+        // slightly off it attacks rather than shuffling back and forth.
+        float toWall = Utils.DistanceXZ(position, centre) - radius;
+        if (toWall < 0f || toWall > state.StandOff + StandTolerance)
         {
             Vector3 stand = centre + (outward * (radius + state.StandOff));
             stand.y = position.y;
-            _ = ai.MoveTo(dt, stand, 0.3f, true);
+            _ = ai.MoveTo(dt, stand, StandTolerance * 0.5f, true);
             return;
         }
 
@@ -187,7 +193,7 @@ internal static class BubbleSiege
         ai.StopMoving();
         ai.LookAt(aim);
 
-        ItemDrop.ItemData weapon = PickWeapon(ai, humanoid, distance - radius + 1f);
+        ItemDrop.ItemData weapon = PickWeapon(ai, humanoid, toWall);
         if (weapon == null)
         {
             return;
@@ -217,7 +223,7 @@ internal static class BubbleSiege
     /// Equips an attack that reaches the wall from where the monster stands and is off cooldown, preferring the ones
     /// the monster's own AI prefers. Keeps the current weapon if none is ready, so the monster waits for it.
     /// </summary>
-    private static ItemDrop.ItemData PickWeapon(MonsterAI ai, Humanoid humanoid, float distanceToAim)
+    private static ItemDrop.ItemData PickWeapon(MonsterAI ai, Humanoid humanoid, float toWall)
     {
         ItemDrop.ItemData current = humanoid.GetCurrentWeapon();
         if (humanoid.InAttack())
@@ -229,8 +235,8 @@ internal static class BubbleSiege
         ItemDrop.ItemData fallback = null;
         foreach (ItemDrop.ItemData item in humanoid.GetInventory().GetAllItems())
         {
-            if (!IsEnemyAttack(ai, item) || distanceToAim < item.m_shared.m_aiAttackRangeMin
-                || distanceToAim > item.m_shared.m_aiAttackRange + 0.5f)
+            if (!IsEnemyAttack(ai, item) || toWall < item.m_shared.m_aiAttackRangeMin
+                || toWall > item.m_shared.m_aiAttackRange)
             {
                 continue;
             }
@@ -277,9 +283,9 @@ internal static class BubbleSiege
             }
         }
 
-        // The aim point is 1 m inside the wall.
+        // Far enough in from the longest reach allowed (stand-off plus tolerance) for the shortest attack to land.
         standOff = melee < float.MaxValue
-            ? Mathf.Max(0.3f, (melee * 0.8f) - 1f)
+            ? Mathf.Clamp((melee * 0.6f) - 0.2f, 0.2f, melee - StandTolerance)
             : Mathf.Clamp(ranged * 0.6f, 4f, 20f);
         return melee < float.MaxValue || ranged < float.MaxValue;
     }
@@ -311,6 +317,7 @@ internal static class BubbleSiege
     /// <summary>The monster loses interest; with no target, vanilla has it keep its distance from the bubble.</summary>
     private static void GiveUp(MonsterAI ai, State state)
     {
+        HomeBubblePlugin.Log.LogInfo(ai.m_character.m_name + " stops attacking the bubble");
         state.Bubble = null;
         state.Target = null;
         state.OutsideAt = float.NegativeInfinity;
