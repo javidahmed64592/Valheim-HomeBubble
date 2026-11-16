@@ -38,6 +38,8 @@ public class HomeBubblePlugin : BaseUnityPlugin
 
         PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
         ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
+
+        CommandManager.Instance.AddConsoleCommand(new StartSiegeCommand());
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "Unity message")]

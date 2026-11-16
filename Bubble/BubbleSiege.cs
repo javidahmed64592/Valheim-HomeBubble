@@ -60,6 +60,15 @@ internal static class BubbleSiege
     private static readonly List<MonsterAI> Dead = [];
     private static float _nextSweep;
 
+    /// <summary>
+    /// For the startsiege command: counts the target as having just been outside, so a monster spawned while the
+    /// target is in a bubble attacks it straight away.
+    /// </summary>
+    public static void PrimeChase(MonsterAI ai, Character target)
+    {
+        States[ai] = new State { Target = target, OutsideAt = Time.time + ChaseMemory };
+    }
+
     public static bool IsBesieging(MonsterAI ai)
     {
         return States.TryGetValue(ai, out State state) && state.Bubble != null;
