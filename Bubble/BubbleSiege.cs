@@ -13,9 +13,11 @@ namespace HomeBubble.Bubble;
 /// </para>
 /// <para>
 /// It only starts when the target crosses into the bubble during a fight, so monsters that come across a base with
-/// players already inside keep away as before. The siege ends when its time runs out, the bubble goes down, or the
-/// target leaves the bubble (the monster then goes back to chasing it). At the end the monster loses interest and
-/// wanders off rather than starting again, until it sees its target outside once more.
+/// players already inside keep away as before. While it lasts, the monster's own AI is skipped: left running, it
+/// tries to flee from the target inside, picks weapons by the distance to the target rather than the wall, and can
+/// switch to attacking buildings. The siege ends when its time runs out, the bubble goes down, or the target dies or
+/// leaves the bubble (the monster then goes back to chasing it). When time runs out the monster loses interest and
+/// wanders off, and doesn't start again until it sees its target outside once more.
 /// </para>
 /// </summary>
 internal static class BubbleSiege
@@ -26,6 +28,9 @@ internal static class BubbleSiege
     /// <summary>A monster further than this beyond the edge when its target ran in wasn't close enough to follow.</summary>
     private const float MaxStartDistance = 30f;
 
+    /// <summary>A target this far from the monster (teleported away, say) ends the siege.</summary>
+    private const float MaxTargetDistance = 80f;
+
     /// <summary>Seconds from the start of a melee swing to when it lands on the wall.</summary>
     private const float MeleeHitDelay = 0.5f;
 
@@ -35,8 +40,11 @@ internal static class BubbleSiege
     {
         public Character Target;
         public float OutsideAt = float.NegativeInfinity;
+
+        /// <summary>The bubble under siege; null when there is no siege.</summary>
         public HomeBubbleZone Bubble;
         public float Until;
+        public float StandOff;
         public float HitAt = -1f;
         public float HitDamage;
         public Vector3 HitPoint;
@@ -46,8 +54,16 @@ internal static class BubbleSiege
     private static readonly List<MonsterAI> Dead = [];
     private static float _nextSweep;
 
-    /// <summary>Runs after the monster's own AI. Returns true if the monster is besieging a bubble this frame.</summary>
-    public static bool Update(MonsterAI ai, Character character, float dt)
+    public static bool IsBesieging(MonsterAI ai)
+    {
+        return States.TryGetValue(ai, out State state) && state.Bubble != null;
+    }
+
+    /// <summary>
+    /// Runs after the monster's own AI when it is not besieging: remembers when its target was last outside, and
+    /// starts a siege if the target has just run into a bubble. Returns true if a siege started.
+    /// </summary>
+    public static bool Watch(MonsterAI ai, Character character)
     {
         Sweep();
 
@@ -68,37 +84,76 @@ internal static class BubbleSiege
         {
             state.Target = target;
             state.OutsideAt = float.NegativeInfinity;
-            state.Bubble = null;
         }
 
         HomeBubbleZone bubble = HomeBubbleZone.FindBubbleInside(target.transform.position);
         if (bubble == null)
         {
-            // Out in the open: the ordinary chase, which remembers that the target was outside.
             state.OutsideAt = Time.time;
+            return false;
+        }
+
+        float beyondEdge = Utils.DistanceXZ(character.transform.position, bubble.Centre) - bubble.Radius;
+        if (Time.time - state.OutsideAt > ChaseMemory || !ai.IsAlerted() || beyondEdge > MaxStartDistance
+            || !TryGetStandOff(ai, humanoid, out float standOff))
+        {
+            return false;
+        }
+
+        state.Bubble = bubble;
+        state.Until = Time.time + BubbleConfig.SiegeSeconds.Value;
+        state.StandOff = standOff;
+        state.HitAt = -1f;
+        return true;
+    }
+
+    /// <summary>
+    /// Runs in place of the monster's own AI while it besieges a bubble. Returns false when there is no siege (or it
+    /// has just ended), so the monster's own AI runs instead.
+    /// </summary>
+    public static bool Run(MonsterAI ai, float dt)
+    {
+        if (!States.TryGetValue(ai, out State state) || state.Bubble == null)
+        {
+            return false;
+        }
+
+        Character character = ai.m_character;
+        Character target = state.Target;
+        if (ai.m_nview == null || !ai.m_nview.IsValid() || !ai.m_nview.IsOwner() || character == null
+            || character is not Humanoid humanoid || !BubbleConfig.AttackBubble.Value)
+        {
             state.Bubble = null;
             return false;
         }
 
-        Vector3 position = character.transform.position;
-        if (state.Bubble != bubble)
-        {
-            float beyondEdge = Utils.DistanceXZ(position, bubble.Centre) - bubble.Radius;
-            if (Time.time - state.OutsideAt > ChaseMemory || !ai.IsAlerted() || beyondEdge > MaxStartDistance)
-            {
-                return false;
-            }
-
-            state.Bubble = bubble;
-            state.Until = Time.time + BubbleConfig.SiegeSeconds.Value;
-            state.HitAt = -1f;
-        }
-
-        if (Time.time >= state.Until || !bubble.IsUp)
+        if (character.IsDead() || target == null || target.IsDead() || state.Bubble == null || !state.Bubble.IsUp
+            || Time.time >= state.Until
+            || Vector3.Distance(character.transform.position, target.transform.position) > MaxTargetDistance)
         {
             GiveUp(ai, state);
             return false;
         }
+
+        HomeBubbleZone bubble = HomeBubbleZone.FindBubbleInside(target.transform.position);
+        if (bubble == null)
+        {
+            // The target came back out: back to the ordinary chase.
+            state.Bubble = null;
+            state.OutsideAt = Time.time;
+            return false;
+        }
+
+        // Overlapping bubbles: go for the one the target is in now.
+        state.Bubble = bubble;
+
+        // What the skipped base AI would have done, and keep the monster on its target so it isn't dropped or
+        // swapped for a building once the siege is over.
+        ai.m_timeSinceHurt += dt;
+        ai.UpdateRegeneration(dt);
+        ai.m_targetCreature = target;
+        ai.m_targetStatic = null;
+        ai.m_timeSinceSensedTargetCreature = 0f;
 
         LandPendingHit(character, state);
         Besiege(ai, character, humanoid, state, dt);
@@ -108,12 +163,6 @@ internal static class BubbleSiege
     private static void Besiege(MonsterAI ai, Character character, Humanoid humanoid, State state, float dt)
     {
         HomeBubbleZone bubble = state.Bubble;
-        ItemDrop.ItemData weapon = ai.SelectBestAttack(humanoid, dt);
-        if (weapon == null)
-        {
-            return;
-        }
-
         Vector3 position = character.transform.position;
         Vector3 centre = bubble.Centre;
         float radius = bubble.Radius;
@@ -121,39 +170,40 @@ internal static class BubbleSiege
         outward.y = 0f;
         outward = outward.sqrMagnitude < 0.01f ? Vector3.forward : outward.normalized;
 
-        bool ranged = weapon.m_shared.m_attack.m_attackType == Attack.AttackType.Projectile;
-        float range = weapon.m_shared.m_aiAttackRange;
-        float standOff = ranged ? Mathf.Clamp(range * 0.6f, 4f, 20f) : Mathf.Max(0.8f, range * 0.5f);
-        float height = character.GetCenterPoint().y;
-
-        // Aim just inside the wall, at chest height, so swings and shots go into it.
-        Vector3 aim = centre + (outward * (radius - 1f));
-        aim.y = height;
-
         float distance = Utils.DistanceXZ(position, centre);
-        if (distance < radius + 0.3f || distance > radius + standOff + 0.5f)
+        if (distance < radius + 0.3f || distance > radius + state.StandOff + 0.5f)
         {
-            Vector3 stand = centre + (outward * (radius + standOff));
+            Vector3 stand = centre + (outward * (radius + state.StandOff));
             stand.y = position.y;
-            _ = ai.MoveTo(dt, stand, 0.5f, true);
+            _ = ai.MoveTo(dt, stand, 0.3f, true);
             return;
         }
+
+        // Aim just inside the wall, at chest height, so swings and shots go into it.
+        float height = character.GetCenterPoint().y;
+        Vector3 aim = centre + (outward * (radius - 1f));
+        aim.y = height;
 
         ai.StopMoving();
         ai.LookAt(aim);
 
+        ItemDrop.ItemData weapon = PickWeapon(ai, humanoid, distance - radius + 1f);
+        if (weapon == null)
+        {
+            return;
+        }
+
         bool ready = !character.InAttack() && !ai.IsTakingOff()
             && Time.time - weapon.m_lastAttackTime > weapon.m_shared.m_aiAttackInterval
             && character.GetTimeSinceLastAttack() >= ai.m_minAttackInterval
-            && ai.CanUseAttack(weapon)
-            && ai.IsLookingAt(aim, weapon.m_shared.m_aiAttackMaxAngle);
+            && ai.IsLookingAt(aim, Mathf.Max(weapon.m_shared.m_aiAttackMaxAngle, 10f));
         if (!ready || !character.StartAttack(null, false))
         {
             return;
         }
 
         ai.m_timeSinceAttacking = 0f;
-        if (!ranged)
+        if (!IsRanged(weapon))
         {
             Vector3 wall = centre + (outward * radius);
             wall.y = height;
@@ -161,6 +211,87 @@ internal static class BubbleSiege
             state.HitDamage = weapon.GetDamage().GetTotalDamage();
             state.HitPoint = wall;
         }
+    }
+
+    /// <summary>
+    /// Equips an attack that reaches the wall from where the monster stands and is off cooldown, preferring the ones
+    /// the monster's own AI prefers. Keeps the current weapon if none is ready, so the monster waits for it.
+    /// </summary>
+    private static ItemDrop.ItemData PickWeapon(MonsterAI ai, Humanoid humanoid, float distanceToAim)
+    {
+        ItemDrop.ItemData current = humanoid.GetCurrentWeapon();
+        if (humanoid.InAttack())
+        {
+            return current;
+        }
+
+        ItemDrop.ItemData pick = null;
+        ItemDrop.ItemData fallback = null;
+        foreach (ItemDrop.ItemData item in humanoid.GetInventory().GetAllItems())
+        {
+            if (!IsEnemyAttack(ai, item) || distanceToAim < item.m_shared.m_aiAttackRangeMin
+                || distanceToAim > item.m_shared.m_aiAttackRange + 0.5f)
+            {
+                continue;
+            }
+
+            fallback ??= item;
+            if (Time.time - item.m_lastAttackTime > item.m_shared.m_aiAttackInterval
+                && (pick == null || (item.m_shared.m_aiPrioritized && !pick.m_shared.m_aiPrioritized)))
+            {
+                pick = item;
+            }
+        }
+
+        pick ??= current != null && IsEnemyAttack(ai, current) ? current : fallback;
+        if (pick != null && pick != current)
+        {
+            _ = humanoid.EquipItem(pick);
+        }
+
+        return pick;
+    }
+
+    /// <summary>
+    /// How far outside the wall to stand: close enough for every melee attack to reach it, or for a monster with
+    /// only ranged attacks, well within range. False if the monster has no attack that can hit the wall.
+    /// </summary>
+    private static bool TryGetStandOff(MonsterAI ai, Humanoid humanoid, out float standOff)
+    {
+        float melee = float.MaxValue;
+        float ranged = float.MaxValue;
+        foreach (ItemDrop.ItemData item in humanoid.GetInventory().GetAllItems())
+        {
+            if (!IsEnemyAttack(ai, item))
+            {
+                continue;
+            }
+
+            if (IsRanged(item))
+            {
+                ranged = Mathf.Min(ranged, item.m_shared.m_aiAttackRange);
+            }
+            else
+            {
+                melee = Mathf.Min(melee, item.m_shared.m_aiAttackRange);
+            }
+        }
+
+        // The aim point is 1 m inside the wall.
+        standOff = melee < float.MaxValue
+            ? Mathf.Max(0.3f, (melee * 0.8f) - 1f)
+            : Mathf.Clamp(ranged * 0.6f, 4f, 20f);
+        return melee < float.MaxValue || ranged < float.MaxValue;
+    }
+
+    private static bool IsEnemyAttack(MonsterAI ai, ItemDrop.ItemData item)
+    {
+        return item.IsWeapon() && item.m_shared.m_aiTargetType == ItemDrop.ItemData.AiTarget.Enemy && ai.CanUseAttack(item);
+    }
+
+    private static bool IsRanged(ItemDrop.ItemData item)
+    {
+        return item.m_shared.m_attack.m_attackType == Attack.AttackType.Projectile;
     }
 
     private static void LandPendingHit(Character character, State state)
@@ -181,12 +312,12 @@ internal static class BubbleSiege
     private static void GiveUp(MonsterAI ai, State state)
     {
         state.Bubble = null;
+        state.Target = null;
         state.OutsideAt = float.NegativeInfinity;
         state.HitAt = -1f;
         ai.SetAlerted(false);
         ai.m_targetCreature = null;
         ai.m_targetStatic = null;
-        state.Target = null;
     }
 
     /// <summary>Forgets monsters that have died or unloaded.</summary>
