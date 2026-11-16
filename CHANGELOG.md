@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - Monsters now attack the bubble when someone they were fighting runs inside, instead of fleeing. They come up to the edge on their side and strike the wall, or shoot at it from range. Their allies nearby that are already in the fight join in. After 30 seconds a monster loses interest and wanders off, but hitting it from inside starts its time over, so fighting back keeps them at the wall. They go back to the chase if their target comes back out. Monsters that find players already inside still keep away. Flying monsters keep away as before. New `Monsters` settings, synced with the server: `AttackBubble` (on) and `SiegeSeconds` (30).
 - Hits on the bubble use up far more bones: one bone per 200 damage, counting the monster's star level and the world's difficulty, so a troll hit costs about 0.35 bones and a two-star troll's about 0.7. Projectiles hitting the bubble use the same rate (vanilla was one bone per 500). Set it with the new synced `Monsters.DamagePerBone` setting.

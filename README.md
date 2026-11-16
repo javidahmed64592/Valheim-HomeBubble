@@ -5,12 +5,14 @@
 # HomeBubble
 
 Keep enemies out of your base with a protective bubble.
+
 The bubble even protects against projectiles and rain, and overlapping bubbles merge into one.
 Keep the bubble generator fuelled with bones, and toggle it on and off with `Shift + E`.
 You get a message when you are near a bubble that is running low on bones.
 
-![Small Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/game_screenshot_1.png)
-![Big Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/game_screenshot_2.png)
+![Small Bubble](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/small_bubble.png)
+
+![Generator Hover](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/generator_hover.png)
 
 ## Building It
 
@@ -39,7 +41,7 @@ Their hits use up bones, and the harder they hit, the more it takes, so retreat 
 They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
 Every upgrade on the bubble's stations makes it take 1% less damage, so a fully upgraded bubble holds out about 20% longer.
 
-![Generator Hover](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/generator_hover.png)
+
 
 ## On the Map
 
