@@ -17,16 +17,43 @@ namespace HomeBubble.Patches;
 /// it flees from the middle of the bubble. Like vanilla's safe zones, this leaves tamed creatures and the Dvergr
 /// (including worker mods' Dvergr) alone.
 /// </para>
+/// <para>
+/// Before any of that, a monster whose target has just run into a bubble during a fight may besiege it instead
+/// (see <see cref="BubbleSiege"/>). While it does, the prefix runs the siege in place of the monster's own AI.
+/// </para>
 /// </summary>
 [HarmonyPatch(typeof(MonsterAI), nameof(MonsterAI.UpdateAI))]
 internal static class MonsterAI_UpdateAI_Patch
 {
+    private static bool Prefix(MonsterAI __instance, float dt, ref bool __result)
+    {
+        if (!BubbleSiege.Run(__instance, dt))
+        {
+            return true;
+        }
+
+        __result = true;
+        return false;
+    }
+
     private static void Postfix(MonsterAI __instance, float dt, bool __result)
     {
+        // Harmony runs postfixes even when the prefix skipped the original.
+        if (BubbleSiege.IsBesieging(__instance))
+        {
+            return;
+        }
+
         Character character = __instance.m_character;
         if (!__result || character == null || character.IsTamed() || __instance.IsSleeping()
             || character.GetFaction() is Character.Faction.Players or Character.Faction.Dverger)
         {
+            return;
+        }
+
+        if (BubbleSiege.Watch(__instance, character))
+        {
+            _ = BubbleSiege.Run(__instance, dt);
             return;
         }
 

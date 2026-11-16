@@ -13,6 +13,7 @@ namespace HomeBubble.Bubble;
 internal sealed class HomeBubbleZone : MonoBehaviour
 {
     private const string RadiusKey = "HB_radius";
+    private const string UpgradesKey = "HB_upgrades";
     /// <summary>
     /// bitmask of the stations that are gone
     /// </summary>
@@ -26,6 +27,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private const float DrainInterval = 10f;
     private const string OffKey = "HB_off";
     private const string ToggleRpc = "HB_Toggle";
+    private const string HitRpc = "HB_Hit";
     /// <summary>
     /// fraction of the fuel range the look catches up per second
     /// </summary>
@@ -47,6 +49,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// seconds between low-fuel warnings while the player stays near a bubble
     /// </summary>
     private const float FuelWarningRepeat = 300f;
+    /// <summary>
+    /// seconds between under-attack messages while monsters hit the bubble
+    /// </summary>
+    private const float AttackWarningRepeat = 5f;
 
     private static readonly string[] StationKeys = ["HB_station0", "HB_station1", "HB_station2", "HB_station3"];
 
@@ -80,6 +86,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private float _drainTimer;
     private readonly int[] _missChecks = new int[4];
     private float _lastFuelWarning = float.NegativeInfinity;
+    private float _lastAttackWarning = float.NegativeInfinity;
     private readonly List<ZSFX> _sounds = [];
 
     /// <summary>
@@ -141,6 +148,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
         SetUpFieldLook();
         _nview.Register(ToggleRpc, RPC_Toggle);
+        _nview.Register<Vector3, float>(HitRpc, RPC_Hit);
 
         Instances.Add(this);
         if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
@@ -476,8 +484,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         // The prefab is set up at the main menu, before a server's synced value arrives; this makes bubbles use it.
         _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
-
         ZDO zdo = _nview.GetZDO();
+
+        // Station upgrades harden the bubble against monster hits and projectiles alike.
+        _shield.m_fuelPerDamage = BubbleConfig.FuelPerDamage * (1f - BubbleConfig.Resistance(zdo.GetInt(UpgradesKey, 0)));
         if (_nview.IsOwner())
         {
             CheckStationsStillStand(zdo);
@@ -499,10 +509,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         if (_nview.IsOwner())
         {
-            float? radius = ComputeRadius(zdo, transform.position);
-            if (radius.HasValue)
+            (float Radius, int Upgrades)? computed = ComputeRadius(zdo, transform.position);
+            if (computed.HasValue)
             {
-                zdo.Set(RadiusKey, radius.Value);
+                zdo.Set(RadiusKey, computed.Value.Radius);
+                zdo.Set(UpgradesKey, computed.Value.Upgrades);
             }
             if (_drainTimer >= DrainInterval)
             {
@@ -766,8 +777,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         HomeBubblePlugin.Log.LogInfo("Home Bubble claimed its Workbench, Forge, Stonecutter and Artisan Table");
     }
 
-    /// <summary>The radius from the claimed stations' upgrades, or null if any of them is not loaded.</summary>
-    private static float? ComputeRadius(ZDO zdo, Vector3 bubblePosition)
+    /// <summary>
+    /// The radius from the claimed stations' upgrades, and how many upgrades they have, or null if any of them is
+    /// not loaded.
+    /// </summary>
+    private static (float Radius, int Upgrades)? ComputeRadius(ZDO zdo, Vector3 bubblePosition)
     {
         int upgrades = 0;
         int possible = 0;
@@ -797,7 +811,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         // Fully upgraded is always the biggest the bubble gets; every upgrade adds an equal share.
         float progress = possible > 0 ? Mathf.Clamp01((float)upgrades / possible) : 0f;
-        return (float)Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress);
+        return (Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress), upgrades);
     }
 
     /// <summary>The most upgraded station of an optional type that serves the point (closest on a tie), or null if there is none.</summary>
@@ -867,12 +881,60 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
     private bool Protects(Vector3 point, float margin)
     {
-        if (_collapsed || IsOff || _shield == null || _shield.m_shieldDome == null)
+        return IsUp && Vector3.Distance(_shield.m_shieldDome.transform.position, point) < Radius + margin;
+    }
+
+    /// <summary>True while the bubble is keeping monsters out: fuelled, switched on and with all its stations.</summary>
+    public bool IsUp => !_collapsed && !IsOff && _shield != null && _shield.m_shieldDome != null && Radius > 0.1f;
+
+    /// <summary>How many upgrades the bubble's stations have, as last counted by its owner.</summary>
+    public int Upgrades => _nview != null && _nview.IsValid() ? _nview.GetZDO().GetInt(UpgradesKey, 0) : 0;
+
+    /// <summary>The dome's current radius, which follows it as it grows, shrinks or switches off.</summary>
+    public float Radius => _shield != null ? _shield.m_radius : 0f;
+
+    /// <summary>
+    /// A monster struck the bubble from outside. Everyone sees and hears the hit, and players in or near the bubble
+    /// are told it is under attack; the owner takes the bones, at the same rate per point of damage as a projectile
+    /// hitting the shield.
+    /// </summary>
+    public void TakeHit(Vector3 point, float damage)
+    {
+        if (_nview != null && _nview.IsValid())
         {
-            return false;
+            _nview.InvokeRPC(ZNetView.Everybody, HitRpc, point, damage);
         }
-        float radius = _shield.m_radius; // follows the dome as it grows, shrinks or switches off
-        return radius > 0.1f && Vector3.Distance(_shield.m_shieldDome.transform.position, point) < radius + margin;
+    }
+
+    private void RPC_Hit(long sender, Vector3 point, float damage)
+    {
+        if (_shield == null || !_nview.IsValid())
+        {
+            return;
+        }
+        _shield.m_lastHitTime = Time.time;
+        _ = _shield.m_shieldHitEffects.Create(point, Quaternion.LookRotation(_shield.transform.position.DirTo(point)));
+        ZDO zdo = _nview.GetZDO();
+        float fuel = Mathf.Max(0f, zdo.GetFloat(ZDOVars.s_fuel, 0f) - (_shield.m_fuelPerDamage * damage));
+        if (_nview.IsOwner())
+        {
+            zdo.Set(ZDOVars.s_fuel, fuel);
+        }
+        WarnUnderAttack(fuel);
+    }
+
+    private void WarnUnderAttack(float fuel)
+    {
+        Player player = Player.m_localPlayer;
+        if (player == null || fuel <= 0f || Time.time - _lastAttackWarning < AttackWarningRepeat
+            || Utils.DistanceXZ(player.transform.position, Centre) > Radius + NoMonsterCloseMargin)
+        {
+            return;
+        }
+
+        _lastAttackWarning = Time.time;
+        string bones = Mathf.CeilToInt(fuel).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        player.Message(MessageHud.MessageType.TopLeft, Localization.instance.Localize("$homebubble_under_attack", bones));
     }
 
     /// <summary>The bubble keeping monsters off this point, if any. Mirrors EffectArea.IsPointInsideNoMonsterArea.</summary>

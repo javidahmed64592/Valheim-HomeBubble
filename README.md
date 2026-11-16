@@ -32,6 +32,22 @@ A Black Forge and Galdr Table within range make it grow too, but they are never 
 The bubble always uses the most upgraded station of each type in range, so upgrading a different bench of the same type, or building a better one, makes the bubble grow.
 If one of its stations is destroyed, the bubble switches to the next best one in range; if none is left, the bubble goes down until one is built.
 
+## Monsters
+
+Monsters keep away from a bubble, but one that was fighting you when you ran inside attacks the bubble, and its allies nearby join in.
+Their hits use up bones, and the harder they hit, the more it takes, so retreat to restock and heal, then go back out and deal with them.
+They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
+Every upgrade on the bubble's stations makes it take 1% less damage, so a fully upgraded bubble holds out about 20% longer.
+
+![Generator Hover](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/generator_hover.png)
+
+## On the Map
+
+The minimap and the large map show the area each bubble covers.
+Only bubbles loaded around you are shown.
+
+![Coverage Map](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/coverage_map.png)
+
 ## Raids
 
 Raids don't start on players inside a bubble.

@@ -35,6 +35,7 @@ internal static class BubblePrefab
         ShieldGenerator shield = clone.GetComponentInChildren<ShieldGenerator>(true);
         shield.m_enableAttack = false;
         shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
+        shield.m_fuelPerDamage = BubbleConfig.FuelPerDamage;
         shield.m_name = "$piece_homebubble"; // the hover text, in place of "$piece_shieldgenerator"
         RemovePoweredHum(clone);
 
@@ -147,7 +148,7 @@ internal static class BubblePrefab
             && ((field != null && renderer.transform.IsChildOf(field)) || (dome != null && renderer.transform.IsChildOf(dome))));
     }
 
-    private static Color ParseTint()
+    internal static Color ParseTint()
     {
         return ColorUtility.TryParseHtmlString(BubbleConfig.Tint.Value, out Color tint)
             ? tint
