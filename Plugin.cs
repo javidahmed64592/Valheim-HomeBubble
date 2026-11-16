@@ -134,7 +134,7 @@ internal static class BubbleConfig
         SiegeSeconds = config.Bind("Monsters", "SiegeSeconds", 30f,
             new ConfigDescription("How many seconds a monster attacks the bubble before it loses interest and wanders off. Hitting it from inside starts the time over. (Synced with server)",
                 new AcceptableValueRange<float>(5f, 300f), Synced()));
-        DamagePerBone = config.Bind("Monsters", "DamagePerBone", 100f,
+        DamagePerBone = config.Bind("Monsters", "DamagePerBone", 200f,
             new ConfigDescription("How much damage the bubble takes from monster hits and projectiles to use up one bone. Hits count the monster's star level and the world's difficulty. Lower drains the bubble faster; the vanilla shield generator's rate is 500. (Synced with server)",
                 new AcceptableValueRange<float>(10f, 2000f), Synced()));
         ResistPerUpgrade = config.Bind("Monsters", "ResistPerUpgrade", 1f,
