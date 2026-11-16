@@ -28,6 +28,9 @@ internal static class BubbleSiege
     /// <summary>A monster further than this beyond the edge when its target ran in wasn't close enough to follow.</summary>
     private const float MaxStartDistance = 30f;
 
+    /// <summary>Allies within this distance of the monster that starts a siege join it.</summary>
+    private const float JoinRange = 20f;
+
     /// <summary>A target this far from the monster (teleported away, say) ends the siege.</summary>
     private const float MaxTargetDistance = 80f;
 
@@ -98,7 +101,30 @@ internal static class BubbleSiege
 
         float beyondEdge = Utils.DistanceXZ(character.transform.position, bubble.Centre) - bubble.Radius;
         if (Time.time - state.OutsideAt > ChaseMemory || !ai.IsAlerted() || beyondEdge > MaxStartDistance
-            || !TryGetStandOff(ai, humanoid, out float standOff))
+            || !Begin(ai, humanoid, state, bubble))
+        {
+            return false;
+        }
+
+        Recruit(ai, character, target, bubble);
+        return true;
+    }
+
+    /// <summary>
+    /// A besieging monster hit by a player keeps going: its siege time starts over, so fighting back from inside
+    /// holds the monsters at the wall, while ignoring them lets them give up.
+    /// </summary>
+    public static void OnDamaged(MonsterAI ai, Character attacker)
+    {
+        if (attacker != null && attacker.IsPlayer() && States.TryGetValue(ai, out State state) && state.Bubble != null)
+        {
+            state.Until = Time.time + BubbleConfig.SiegeSeconds.Value;
+        }
+    }
+
+    private static bool Begin(MonsterAI ai, Humanoid humanoid, State state, HomeBubbleZone bubble)
+    {
+        if (!TryGetStandOff(ai, humanoid, out float standOff))
         {
             return false;
         }
@@ -107,8 +133,43 @@ internal static class BubbleSiege
         state.Until = Time.time + BubbleConfig.SiegeSeconds.Value;
         state.StandOff = standOff;
         state.HitAt = -1f;
-        HomeBubblePlugin.Log.LogInfo(character.m_name + " attacks the bubble, standing " + standOff.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m out");
+        HomeBubblePlugin.Log.LogInfo(humanoid.m_name + " attacks the bubble, standing "
+            + standOff.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m out");
         return true;
+    }
+
+    /// <summary>
+    /// Brings in the starter's allies nearby that are already in a fight, so a whole pack hits the wall. Only
+    /// monsters this game runs the AI for can be told what to do; the rest join on their own if they were chasing
+    /// the same target.
+    /// </summary>
+    private static void Recruit(MonsterAI starter, Character starterCharacter, Character target, HomeBubbleZone bubble)
+    {
+        Vector3 origin = starterCharacter.transform.position;
+        foreach (BaseAI other in BaseAI.BaseAIInstances)
+        {
+            if (other is not MonsterAI ai || ai == starter || IsBesieging(ai) || !ai.IsAlerted()
+                || ai.m_nview == null || !ai.m_nview.IsValid() || !ai.m_nview.IsOwner()
+                || ai.m_character is not Humanoid humanoid || humanoid.IsDead() || humanoid.IsTamed() || humanoid.IsFlying()
+                || humanoid.GetFaction() != starterCharacter.GetFaction() || !ai.IsEnemy(target)
+                || Vector3.Distance(origin, humanoid.transform.position) > JoinRange)
+            {
+                continue;
+            }
+
+            if (!States.TryGetValue(ai, out State state))
+            {
+                state = new State();
+                States[ai] = state;
+            }
+
+            state.Target = target;
+            if (Begin(ai, humanoid, state, bubble))
+            {
+                ai.m_targetCreature = target;
+                ai.m_targetStatic = null;
+            }
+        }
     }
 
     /// <summary>
@@ -214,7 +275,7 @@ internal static class BubbleSiege
             Vector3 wall = centre + (outward * radius);
             wall.y = height;
             state.HitAt = Time.time + MeleeHitDelay;
-            state.HitDamage = weapon.GetDamage().GetTotalDamage();
+            state.HitDamage = HitDamage(character, weapon);
             state.HitPoint = wall;
         }
     }
@@ -288,6 +349,13 @@ internal static class BubbleSiege
             ? Mathf.Clamp((melee * 0.6f) - 0.2f, 0.2f, melee - StandTolerance)
             : Mathf.Clamp(ranged * 0.6f, 4f, 20f);
         return melee < float.MaxValue || ranged < float.MaxValue;
+    }
+
+    /// <summary>The damage the swing would do to a player: the weapon's, scaled by star level and world difficulty.</summary>
+    private static float HitDamage(Character character, ItemDrop.ItemData weapon)
+    {
+        float level = 1f + (Mathf.Max(0, character.GetLevel() - 1) * 0.5f);
+        return weapon.GetDamage().GetTotalDamage() * level * Game.m_enemyDamageRate;
     }
 
     private static bool IsEnemyAttack(MonsterAI ai, ItemDrop.ItemData item)

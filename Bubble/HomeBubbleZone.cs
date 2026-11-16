@@ -48,6 +48,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     /// seconds between low-fuel warnings while the player stays near a bubble
     /// </summary>
     private const float FuelWarningRepeat = 300f;
+    /// <summary>
+    /// seconds between under-attack messages while monsters hit the bubble
+    /// </summary>
+    private const float AttackWarningRepeat = 5f;
 
     private static readonly string[] StationKeys = ["HB_station0", "HB_station1", "HB_station2", "HB_station3"];
 
@@ -81,6 +85,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private float _drainTimer;
     private readonly int[] _missChecks = new int[4];
     private float _lastFuelWarning = float.NegativeInfinity;
+    private float _lastAttackWarning = float.NegativeInfinity;
     private readonly List<ZSFX> _sounds = [];
 
     /// <summary>
@@ -478,6 +483,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         // The prefab is set up at the main menu, before a server's synced value arrives; this makes bubbles use it.
         _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
+        _shield.m_fuelPerDamage = BubbleConfig.FuelPerDamage;
 
         ZDO zdo = _nview.GetZDO();
         if (_nview.IsOwner())
@@ -879,8 +885,9 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     public float Radius => _shield != null ? _shield.m_radius : 0f;
 
     /// <summary>
-    /// A monster struck the bubble from outside. Everyone sees and hears the hit; the owner takes the bones, at the
-    /// same rate per point of damage as a projectile hitting the shield.
+    /// A monster struck the bubble from outside. Everyone sees and hears the hit, and players in or near the bubble
+    /// are told it is under attack; the owner takes the bones, at the same rate per point of damage as a projectile
+    /// hitting the shield.
     /// </summary>
     public void TakeHit(Vector3 point, float damage)
     {
@@ -898,12 +905,27 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         }
         _shield.m_lastHitTime = Time.time;
         _ = _shield.m_shieldHitEffects.Create(point, Quaternion.LookRotation(_shield.transform.position.DirTo(point)));
+        ZDO zdo = _nview.GetZDO();
+        float fuel = Mathf.Max(0f, zdo.GetFloat(ZDOVars.s_fuel, 0f) - (_shield.m_fuelPerDamage * damage));
         if (_nview.IsOwner())
         {
-            ZDO zdo = _nview.GetZDO();
-            float fuel = zdo.GetFloat(ZDOVars.s_fuel, 0f);
-            zdo.Set(ZDOVars.s_fuel, Mathf.Max(0f, fuel - (_shield.m_fuelPerDamage * damage)));
+            zdo.Set(ZDOVars.s_fuel, fuel);
         }
+        WarnUnderAttack(fuel);
+    }
+
+    private void WarnUnderAttack(float fuel)
+    {
+        Player player = Player.m_localPlayer;
+        if (player == null || fuel <= 0f || Time.time - _lastAttackWarning < AttackWarningRepeat
+            || Utils.DistanceXZ(player.transform.position, Centre) > Radius + NoMonsterCloseMargin)
+        {
+            return;
+        }
+
+        _lastAttackWarning = Time.time;
+        string bones = Mathf.CeilToInt(fuel).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        player.Message(MessageHud.MessageType.TopLeft, Localization.instance.Localize("$homebubble_under_attack", bones));
     }
 
     /// <summary>The bubble keeping monsters off this point, if any. Mirrors EffectArea.IsPointInsideNoMonsterArea.</summary>

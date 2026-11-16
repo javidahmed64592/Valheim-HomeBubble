@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Monsters now attack the bubble when someone they were fighting runs inside, instead of fleeing. They come up to the edge on their side and strike the wall, or shoot at it from range, and their hits use up bones at the same rate per point of damage as projectiles hitting the shield. After 30 seconds they lose interest and wander off, and they go back to the chase if their target comes back out. Monsters that find players already inside still keep away, so a bubble is a place to retreat to and restock, but it has to be defended. New `Monsters` settings, synced with the server: `AttackBubble` (on) and `SiegeSeconds` (30). Flying monsters keep away as before.
+- Monsters now attack the bubble when someone they were fighting runs inside, instead of fleeing. They come up to the edge on their side and strike the wall, or shoot at it from range. Their allies nearby that are already in the fight join in. After 30 seconds a monster loses interest and wanders off, but hitting it from inside starts its time over, so fighting back keeps them at the wall. They go back to the chase if their target comes back out. Monsters that find players already inside still keep away. Flying monsters keep away as before. New `Monsters` settings, synced with the server: `AttackBubble` (on) and `SiegeSeconds` (30).
+- Hits on the bubble use up far more bones: one bone per 100 damage, counting the monster's star level and the world's difficulty, so a troll hit costs about 0.7 bones and a two-star troll's about 1.4. Projectiles hitting the bubble use the same rate (vanilla was one bone per 500). Set it with the new synced `Monsters.DamagePerBone` setting.
+- Players in or near a bubble that is being hit get a message with the bones it has left, every few seconds.
 - The minimap and the large map shade the area each loaded bubble covers in the bubble's tint, with a brighter edge. Overlapping bubbles show as one shape. Turn it off with the new `MapCoverage` setting under `[Look]`.
 
 ## 0.6.0

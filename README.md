@@ -34,14 +34,17 @@ If one of its stations is destroyed, the bubble switches to the next best one in
 
 ## Monsters
 
-Monsters keep away from a bubble, but one that was fighting you when you ran inside attacks the bubble for a while.
-Its hits use up bones, so retreat to restock and heal, then go back out and deal with it.
+Monsters keep away from a bubble, but one that was fighting you when you ran inside attacks the bubble, and its allies nearby join in.
+Their hits use up bones, and the harder they hit, the more it takes, so retreat to restock and heal, then go back out and deal with them.
+They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
 Monsters that find you already inside don't attack it.
 
 ## On the Map
 
 The minimap and the large map show the area each bubble covers.
 Only bubbles loaded around you are shown.
+
+![Coverage Map](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/coverage_map.png)
 
 ## Raids
 

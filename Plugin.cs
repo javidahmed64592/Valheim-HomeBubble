@@ -83,6 +83,7 @@ internal static class BubbleConfig
     public static ConfigEntry<float> DeferDistance;
     public static ConfigEntry<bool> AttackBubble;
     public static ConfigEntry<float> SiegeSeconds;
+    public static ConfigEntry<float> DamagePerBone;
     public static ConfigEntry<bool> MapCoverage;
     public static ConfigEntry<float> Volume;
     public static ConfigEntry<int> LowFuelWarning;
@@ -96,7 +97,7 @@ internal static class BubbleConfig
             new ConfigDescription("Radius (metres) once every upgrade is built on the bubble's crafting stations. (Synced with server)",
                 new AcceptableValueRange<float>(5f, 200f), Synced()));
         MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
-            new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by projectile hits. (Synced with server)",
+            new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by monsters hitting the bubble. (Synced with server)",
                 new AcceptableValueRange<float>(0f, 600f), Synced()));
         MaxFuel = config.Bind("Bubble", "MaxFuel", 50,
             new ConfigDescription("The most bones the generator can hold. (Synced with server)",
@@ -128,8 +129,11 @@ internal static class BubbleConfig
             new ConfigDescription("A monster fighting someone who runs into a bubble attacks the bubble for a while instead of fleeing. Its hits use up bones, like projectiles hitting the shield. Monsters that find players already inside still keep away. (Synced with server)",
                 null, Synced()));
         SiegeSeconds = config.Bind("Monsters", "SiegeSeconds", 30f,
-            new ConfigDescription("How many seconds a monster attacks the bubble before it loses interest and wanders off. (Synced with server)",
+            new ConfigDescription("How many seconds a monster attacks the bubble before it loses interest and wanders off. Hitting it from inside starts the time over. (Synced with server)",
                 new AcceptableValueRange<float>(5f, 300f), Synced()));
+        DamagePerBone = config.Bind("Monsters", "DamagePerBone", 100f,
+            new ConfigDescription("How much damage the bubble takes from monster hits and projectiles to use up one bone. Hits count the monster's star level and the world's difficulty. Lower drains the bubble faster; the vanilla shield generator's rate is 500. (Synced with server)",
+                new AcceptableValueRange<float>(10f, 2000f), Synced()));
 
         MapCoverage = config.Bind("Look", "MapCoverage", true,
             "Shade the area each bubble covers on the minimap and the large map, in the bubble's tint.");
@@ -142,6 +146,9 @@ internal static class BubbleConfig
             new ConfigDescription("Warn you when you are in or near a bubble with fewer bones than this. 0 turns the warning off.",
                 new AcceptableValueRange<int>(0, 1000)));
     }
+
+    /// <summary>Bones used up per point of damage the bubble takes.</summary>
+    public static float FuelPerDamage => 1f / DamagePerBone.Value;
 
     /// <summary>Settings that use the server's value when the server has the mod.</summary>
     private static ConfigurationManagerAttributes Synced()
