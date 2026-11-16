@@ -5,6 +5,7 @@ using BepInEx.Configuration;
 
 using HarmonyLib;
 
+using HomeBubble.Bubble;
 using HomeBubble.Core;
 using HomeBubble.Prefabs;
 
@@ -39,8 +40,15 @@ public class HomeBubblePlugin : BaseUnityPlugin
         ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "Unity message")]
+    private void Update()
+    {
+        BubbleMap.Tick();
+    }
+
     private void OnDestroy()
     {
+        BubbleMap.Destroy();
         _harmony?.UnpatchSelf();
     }
 
@@ -73,6 +81,9 @@ internal static class BubbleConfig
     public static ConfigEntry<bool> DeferRaids;
     public static ConfigEntry<float> DeferMinutes;
     public static ConfigEntry<float> DeferDistance;
+    public static ConfigEntry<bool> AttackBubble;
+    public static ConfigEntry<float> SiegeSeconds;
+    public static ConfigEntry<bool> MapCoverage;
     public static ConfigEntry<float> Volume;
     public static ConfigEntry<int> LowFuelWarning;
 
@@ -112,6 +123,16 @@ internal static class BubbleConfig
         DeferDistance = config.Bind("Raids", "DeferDistance", 30f,
             new ConfigDescription("How many metres beyond the edge of every bubble a player must be for a held-off raid to start on them. (Synced with server)",
                 new AcceptableValueRange<float>(0f, 500f), Synced()));
+
+        AttackBubble = config.Bind("Monsters", "AttackBubble", true,
+            new ConfigDescription("A monster fighting someone who runs into a bubble attacks the bubble for a while instead of fleeing. Its hits use up bones, like projectiles hitting the shield. Monsters that find players already inside still keep away. (Synced with server)",
+                null, Synced()));
+        SiegeSeconds = config.Bind("Monsters", "SiegeSeconds", 30f,
+            new ConfigDescription("How many seconds a monster attacks the bubble before it loses interest and wanders off. (Synced with server)",
+                new AcceptableValueRange<float>(5f, 300f), Synced()));
+
+        MapCoverage = config.Bind("Look", "MapCoverage", true,
+            "Shade the area each bubble covers on the minimap and the large map, in the bubble's tint.");
 
         Volume = config.Bind("Sound", "Volume", 0.4f,
             new ConfigDescription("How loud the bubble generator's sounds are, such as its low-fuel hum. 1 is the vanilla shield generator's volume, 0 is silent.",

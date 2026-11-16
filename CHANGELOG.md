@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Monsters now attack the bubble when someone they were fighting runs inside, instead of fleeing. They come up to the edge on their side and strike the wall, or shoot at it from range, and their hits use up bones at the same rate per point of damage as projectiles hitting the shield. After 30 seconds they lose interest and wander off, and they go back to the chase if their target comes back out. Monsters that find players already inside still keep away, so a bubble is a place to retreat to and restock, but it has to be defended. New `Monsters` settings, synced with the server: `AttackBubble` (on) and `SiegeSeconds` (30). Flying monsters keep away as before.
+- The minimap and the large map shade the area each loaded bubble covers in the bubble's tint, with a brighter edge. Overlapping bubbles show as one shape. Turn it off with the new `MapCoverage` setting under `[Look]`.
+
 ## 0.6.0
 
 - Monsters no longer wander into a bubble. Before, they only kept out when they had no target, or when their target was inside, so a monster chasing something outside could follow it in. Now a monster that gets inside steps back out: if what it is fighting is still outside, it stops just past the edge and carries on, so monsters can fight right up to the bubble. If its target is inside too, it flees. Tamed creatures and the Dvergr are left alone, as at the trader's camp.

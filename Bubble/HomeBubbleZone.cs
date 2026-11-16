@@ -26,6 +26,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
     private const float DrainInterval = 10f;
     private const string OffKey = "HB_off";
     private const string ToggleRpc = "HB_Toggle";
+    private const string HitRpc = "HB_Hit";
     /// <summary>
     /// fraction of the fuel range the look catches up per second
     /// </summary>
@@ -141,6 +142,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         _lowFuelLoopStart = _shield.m_shieldLowLoopFuelStart;
         SetUpFieldLook();
         _nview.Register(ToggleRpc, RPC_Toggle);
+        _nview.Register<Vector3, float>(HitRpc, RPC_Hit);
 
         Instances.Add(this);
         if (_nview.IsOwner() && _nview.GetZDO().GetZDOID(StationKeys[0]) == ZDOID.None)
@@ -867,12 +869,41 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
     private bool Protects(Vector3 point, float margin)
     {
-        if (_collapsed || IsOff || _shield == null || _shield.m_shieldDome == null)
+        return IsUp && Vector3.Distance(_shield.m_shieldDome.transform.position, point) < Radius + margin;
+    }
+
+    /// <summary>True while the bubble is keeping monsters out: fuelled, switched on and with all its stations.</summary>
+    public bool IsUp => !_collapsed && !IsOff && _shield != null && _shield.m_shieldDome != null && Radius > 0.1f;
+
+    /// <summary>The dome's current radius, which follows it as it grows, shrinks or switches off.</summary>
+    public float Radius => _shield != null ? _shield.m_radius : 0f;
+
+    /// <summary>
+    /// A monster struck the bubble from outside. Everyone sees and hears the hit; the owner takes the bones, at the
+    /// same rate per point of damage as a projectile hitting the shield.
+    /// </summary>
+    public void TakeHit(Vector3 point, float damage)
+    {
+        if (_nview != null && _nview.IsValid())
         {
-            return false;
+            _nview.InvokeRPC(ZNetView.Everybody, HitRpc, point, damage);
         }
-        float radius = _shield.m_radius; // follows the dome as it grows, shrinks or switches off
-        return radius > 0.1f && Vector3.Distance(_shield.m_shieldDome.transform.position, point) < radius + margin;
+    }
+
+    private void RPC_Hit(long sender, Vector3 point, float damage)
+    {
+        if (_shield == null || !_nview.IsValid())
+        {
+            return;
+        }
+        _shield.m_lastHitTime = Time.time;
+        _ = _shield.m_shieldHitEffects.Create(point, Quaternion.LookRotation(_shield.transform.position.DirTo(point)));
+        if (_nview.IsOwner())
+        {
+            ZDO zdo = _nview.GetZDO();
+            float fuel = zdo.GetFloat(ZDOVars.s_fuel, 0f);
+            zdo.Set(ZDOVars.s_fuel, Mathf.Max(0f, fuel - (_shield.m_fuelPerDamage * damage)));
+        }
     }
 
     /// <summary>The bubble keeping monsters off this point, if any. Mirrors EffectArea.IsPointInsideNoMonsterArea.</summary>

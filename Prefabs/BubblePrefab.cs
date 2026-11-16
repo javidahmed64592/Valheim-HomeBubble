@@ -147,7 +147,7 @@ internal static class BubblePrefab
             && ((field != null && renderer.transform.IsChildOf(field)) || (dome != null && renderer.transform.IsChildOf(dome))));
     }
 
-    private static Color ParseTint()
+    internal static Color ParseTint()
     {
         return ColorUtility.TryParseHtmlString(BubbleConfig.Tint.Value, out Color tint)
             ? tint

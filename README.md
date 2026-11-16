@@ -32,6 +32,17 @@ A Black Forge and Galdr Table within range make it grow too, but they are never 
 The bubble always uses the most upgraded station of each type in range, so upgrading a different bench of the same type, or building a better one, makes the bubble grow.
 If one of its stations is destroyed, the bubble switches to the next best one in range; if none is left, the bubble goes down until one is built.
 
+## Monsters
+
+Monsters keep away from a bubble, but one that was fighting you when you ran inside attacks the bubble for a while.
+Its hits use up bones, so retreat to restock and heal, then go back out and deal with it.
+Monsters that find you already inside don't attack it.
+
+## On the Map
+
+The minimap and the large map show the area each bubble covers.
+Only bubbles loaded around you are shown.
+
 ## Raids
 
 Raids don't start on players inside a bubble.
