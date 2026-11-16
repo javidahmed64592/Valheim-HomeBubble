@@ -38,8 +38,8 @@ Monsters keep away from a bubble, but one that was fighting you when you ran ins
 Their hits use up bones, and the harder they hit, the more it takes, so retreat to restock and heal, then go back out and deal with them.
 They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
 Every upgrade on the bubble's stations makes it take 1% less damage, so a fully upgraded bubble holds out about 20% longer.
-Hover over the generator to see its damage resistance.
-Monsters that find you already inside don't attack it.
+
+![Generator Hover](https://github.com/javidahmed64592/Valheim-HomeBubble/raw/main/images/generator_hover.png)
 
 ## On the Map
 
