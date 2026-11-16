@@ -13,6 +13,7 @@ namespace HomeBubble.Bubble;
 internal sealed class HomeBubbleZone : MonoBehaviour
 {
     private const string RadiusKey = "HB_radius";
+    private const string UpgradesKey = "HB_upgrades";
     /// <summary>
     /// bitmask of the stations that are gone
     /// </summary>
@@ -483,9 +484,10 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         // The prefab is set up at the main menu, before a server's synced value arrives; this makes bubbles use it.
         _shield.m_maxFuel = BubbleConfig.MaxFuel.Value;
-        _shield.m_fuelPerDamage = BubbleConfig.FuelPerDamage;
-
         ZDO zdo = _nview.GetZDO();
+
+        // Station upgrades harden the bubble against monster hits and projectiles alike.
+        _shield.m_fuelPerDamage = BubbleConfig.FuelPerDamage * (1f - BubbleConfig.Resistance(zdo.GetInt(UpgradesKey, 0)));
         if (_nview.IsOwner())
         {
             CheckStationsStillStand(zdo);
@@ -507,10 +509,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         if (_nview.IsOwner())
         {
-            float? radius = ComputeRadius(zdo, transform.position);
-            if (radius.HasValue)
+            (float Radius, int Upgrades)? computed = ComputeRadius(zdo, transform.position);
+            if (computed.HasValue)
             {
-                zdo.Set(RadiusKey, radius.Value);
+                zdo.Set(RadiusKey, computed.Value.Radius);
+                zdo.Set(UpgradesKey, computed.Value.Upgrades);
             }
             if (_drainTimer >= DrainInterval)
             {
@@ -774,8 +777,11 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         HomeBubblePlugin.Log.LogInfo("Home Bubble claimed its Workbench, Forge, Stonecutter and Artisan Table");
     }
 
-    /// <summary>The radius from the claimed stations' upgrades, or null if any of them is not loaded.</summary>
-    private static float? ComputeRadius(ZDO zdo, Vector3 bubblePosition)
+    /// <summary>
+    /// The radius from the claimed stations' upgrades, and how many upgrades they have, or null if any of them is
+    /// not loaded.
+    /// </summary>
+    private static (float Radius, int Upgrades)? ComputeRadius(ZDO zdo, Vector3 bubblePosition)
     {
         int upgrades = 0;
         int possible = 0;
@@ -805,7 +811,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
 
         // Fully upgraded is always the biggest the bubble gets; every upgrade adds an equal share.
         float progress = possible > 0 ? Mathf.Clamp01((float)upgrades / possible) : 0f;
-        return (float)Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress);
+        return (Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress), upgrades);
     }
 
     /// <summary>The most upgraded station of an optional type that serves the point (closest on a tie), or null if there is none.</summary>

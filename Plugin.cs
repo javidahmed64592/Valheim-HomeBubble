@@ -86,6 +86,7 @@ internal static class BubbleConfig
     public static ConfigEntry<bool> AttackBubble;
     public static ConfigEntry<float> SiegeSeconds;
     public static ConfigEntry<float> DamagePerBone;
+    public static ConfigEntry<float> ResistPerUpgrade;
     public static ConfigEntry<bool> MapCoverage;
     public static ConfigEntry<float> Volume;
     public static ConfigEntry<int> LowFuelWarning;
@@ -136,6 +137,9 @@ internal static class BubbleConfig
         DamagePerBone = config.Bind("Monsters", "DamagePerBone", 100f,
             new ConfigDescription("How much damage the bubble takes from monster hits and projectiles to use up one bone. Hits count the monster's star level and the world's difficulty. Lower drains the bubble faster; the vanilla shield generator's rate is 500. (Synced with server)",
                 new AcceptableValueRange<float>(10f, 2000f), Synced()));
+        ResistPerUpgrade = config.Bind("Monsters", "ResistPerUpgrade", 1f,
+            new ConfigDescription("How much less damage (percent) the bubble takes for each upgrade built on its stations, so a fully upgraded bubble with about 20 upgrades takes about 20% less. 0 turns it off. (Synced with server)",
+                new AcceptableValueRange<float>(0f, 5f), Synced()));
 
         MapCoverage = config.Bind("Look", "MapCoverage", true,
             "Shade the area each bubble covers on the minimap and the large map, in the bubble's tint.");
@@ -151,6 +155,12 @@ internal static class BubbleConfig
 
     /// <summary>Bones used up per point of damage the bubble takes.</summary>
     public static float FuelPerDamage => 1f / DamagePerBone.Value;
+
+    /// <summary>The share of damage a bubble with this many station upgrades shrugs off, capped at 90%.</summary>
+    public static float Resistance(int upgrades)
+    {
+        return UnityEngine.Mathf.Clamp(upgrades * ResistPerUpgrade.Value / 100f, 0f, 0.9f);
+    }
 
     /// <summary>Settings that use the server's value when the server has the mod.</summary>
     private static ConfigurationManagerAttributes Synced()

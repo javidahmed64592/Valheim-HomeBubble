@@ -37,6 +37,7 @@ If one of its stations is destroyed, the bubble switches to the next best one in
 Monsters keep away from a bubble, but one that was fighting you when you ran inside attacks the bubble, and its allies nearby join in.
 Their hits use up bones, and the harder they hit, the more it takes, so retreat to restock and heal, then go back out and deal with them.
 They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
+Every upgrade on the bubble's stations makes it take 1% less damage, so a fully upgraded bubble holds out about 20% longer.
 Monsters that find you already inside don't attack it.
 
 ## On the Map
