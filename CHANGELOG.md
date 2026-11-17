@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+
+- The bubble no longer has a second "Defence" tab of its own in the build menu. It's only on the vanilla Defence tab, next to the shield generator.
+- The bubble holds up to 100 bones by default, up from 50, so it lasts longer through sieges. Existing config files keep their current `MaxFuel` value, so change it there to get the new default.
+
 ## 0.7.0
 
 - Monsters now attack the bubble when someone they were fighting runs inside, instead of fleeing. They come up to the edge on their side and strike the wall, or shoot at it from range. Their allies nearby that are already in the fight join in. After 30 seconds a monster loses interest and wanders off, but hitting it from inside starts its time over, so fighting back keeps them at the wall. They go back to the chase if their target comes back out. Monsters that find players already inside still keep away. Flying monsters keep away as before. New `Monsters` settings, synced with the server: `AttackBubble` (on) and `SiegeSeconds` (30).
