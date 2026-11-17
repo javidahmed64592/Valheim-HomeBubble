@@ -21,7 +21,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
 {
     public const string PluginGUID = "javidahmed64592.homebubble";
     public const string PluginName = "Home Bubble";
-    public const string PluginVersion = "0.7.0";
+    public const string PluginVersion = "0.8.0";
 
     internal static BepInEx.Logging.ManualLogSource Log { get; private set; }
 
@@ -102,7 +102,7 @@ internal static class BubbleConfig
         MinutesPerBone = config.Bind("Bubble", "MinutesPerBone", 30f,
             new ConfigDescription("Real-time minutes one bone keeps the bubble up. 0 means bones are only used up by monsters hitting the bubble. (Synced with server)",
                 new AcceptableValueRange<float>(0f, 600f), Synced()));
-        MaxFuel = config.Bind("Bubble", "MaxFuel", 50,
+        MaxFuel = config.Bind("Bubble", "MaxFuel", 100,
             new ConfigDescription("The most bones the generator can hold. (Synced with server)",
                 new AcceptableValueRange<int>(1, 1000), Synced()));
 

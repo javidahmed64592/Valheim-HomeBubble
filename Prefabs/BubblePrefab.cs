@@ -56,7 +56,9 @@ internal static class BubblePrefab
             Name = "$piece_homebubble",
             Description = "$piece_homebubble_description",
             PieceTable = "Hammer",
-            Category = "Defence",
+            // The shield generator's own category: its usage tags already put it on the vanilla Defence tab,
+            // and a name that isn't a vanilla category ("Defence") makes Jotunn add a second, custom tab.
+            Category = source.GetComponent<Piece>().m_category.ToString(),
             CraftingStation = "",
             Requirements =
             [
