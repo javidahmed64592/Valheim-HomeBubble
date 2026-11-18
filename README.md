@@ -41,7 +41,10 @@ Their hits use up bones, and the harder they hit, the more it takes, so retreat 
 They give up after a while if you leave them alone, but fighting back from inside keeps them at the wall.
 Every upgrade on the bubble's stations makes it take 1% less damage, so a fully upgraded bubble holds out about 20% longer.
 
+## Getting Ready
 
+Your food and the Rested effect don't wear off while you are inside a bubble, so you can prepare for an adventure and leave in your own time.
+Food still heals you as usual. Turn this off with the `PauseTimers` setting.
 
 ## On the Map
 

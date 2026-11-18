@@ -21,7 +21,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
 {
     public const string PluginGUID = "javidahmed64592.homebubble";
     public const string PluginName = "Home Bubble";
-    public const string PluginVersion = "0.8.0";
+    public const string PluginVersion = "1.0.0";
 
     internal static BepInEx.Logging.ManualLogSource Log { get; private set; }
 
@@ -76,6 +76,7 @@ internal static class BubbleConfig
     public static ConfigEntry<float> FullRadius;
     public static ConfigEntry<float> MinutesPerBone;
     public static ConfigEntry<int> MaxFuel;
+    public static ConfigEntry<bool> PauseTimers;
     public static ConfigEntry<float> Visibility;
     public static ConfigEntry<string> Tint;
     public static ConfigEntry<float> TintOpacity;
@@ -105,6 +106,9 @@ internal static class BubbleConfig
         MaxFuel = config.Bind("Bubble", "MaxFuel", 100,
             new ConfigDescription("The most bones the generator can hold. (Synced with server)",
                 new AcceptableValueRange<int>(1, 1000), Synced()));
+        PauseTimers = config.Bind("Bubble", "PauseTimers", true,
+            new ConfigDescription("Food and the Rested effect don't wear off while you are inside a bubble that is up, so you can get ready and leave in your own time. (Synced with server)",
+                null, Synced()));
 
         Visibility = config.Bind("Look", "Distortion", 4f,
             new ConfigDescription("How strongly the bubble warps what you see through it.",
