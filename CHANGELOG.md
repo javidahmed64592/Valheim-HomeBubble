@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0
+
+- First stable release.
+- Your food and the Rested effect no longer wear off while you are inside a bubble that is up, so you can get ready for an adventure and leave in your own time. Food still heals you over time as usual. Turn it off with the new synced `Bubble.PauseTimers` setting.
+
 ## 0.8.0
 
 - The bubble no longer has a second "Defence" tab of its own in the build menu. It's only on the vanilla Defence tab, next to the shield generator.
