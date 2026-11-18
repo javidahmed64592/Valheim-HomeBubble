@@ -798,7 +798,7 @@ internal sealed class HomeBubbleZone : MonoBehaviour
             possible += CountAvailableUpgrades(station);
         }
 
-        // Optional stations only count while one is in range of the bubble; without one they add nothing.
+        // Optional stations only count while one serves the bubble (in plain or BenchLink range); without one they add nothing.
         foreach (string prefab in OptionalStationPrefabs)
         {
             CraftingStation station = FindOptionalStation(prefab, bubblePosition);
@@ -814,25 +814,41 @@ internal sealed class HomeBubbleZone : MonoBehaviour
         return (Mathf.Lerp(BubbleConfig.BaseRadius.Value, BubbleConfig.FullRadius.Value, progress), upgrades);
     }
 
-    /// <summary>The most upgraded station of an optional type that serves the point (closest on a tie), or null if there is none.</summary>
+    /// <summary>
+    /// The most upgraded station of an optional type that serves the point, in plain or extended build range
+    /// (e.g. BenchLink), like the required stations (closest on a tie), or null if there is none.
+    /// </summary>
     private static CraftingStation FindOptionalStation(string prefab, Vector3 point)
     {
-        CraftingStation best = null;
-        (int upgrades, float closeness) bestScore = default;
+        List<CraftingStation> candidates = [];
+        string stationName = null;
         foreach (CraftingStation station in CraftingStation.m_allStations)
         {
             if (station == null || Utils.GetPrefabName(station.gameObject) != prefab)
             {
                 continue;
             }
+            stationName = station.m_name;
             Vector3 flat = point;
             flat.y = station.transform.position.y; // build range ignores height, like vanilla
-            float distance = Vector3.Distance(station.transform.position, flat);
-            if (distance >= station.GetStationBuildRange())
+            if (Vector3.Distance(station.transform.position, flat) < station.GetStationBuildRange())
             {
-                continue;
+                candidates.Add(station);
             }
-            (int, float) score = (CountUpgrades(station), -distance);
+        }
+
+        // The game also knows about any extended build range, such as BenchLink's linked stations.
+        CraftingStation buildable = stationName != null ? CraftingStation.HaveBuildStationInRange(stationName, point) : null;
+        if (buildable != null && !candidates.Contains(buildable))
+        {
+            candidates.Add(buildable);
+        }
+
+        CraftingStation best = null;
+        (int upgrades, float closeness) bestScore = default;
+        foreach (CraftingStation station in candidates)
+        {
+            (int, float) score = (CountUpgrades(station), -Utils.DistanceXZ(station.transform.position, point));
             if (best == null || score.CompareTo(bestScore) > 0)
             {
                 best = station;

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The Black Forge and Galdr Table now count when they're in range through BenchLink, like the four required stations already did. Their upgrades make the bubble bigger and add to its damage resistance. Before, they only counted within their own build range of the bubble.
+
 ## 1.0.0
 
 - First stable release.
