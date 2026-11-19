@@ -30,7 +30,7 @@ Find it in the Hammer's **Defence** tab.
 ## Bubble Size
 
 The bubble grows as you build upgrades on the Workbench, Forge, Stonecutter and Artisan Table.
-A Black Forge and Galdr Table within range make it grow too, but they are never required: without them the bubble simply ignores them.
+A Black Forge and Galdr Table within range, including range extended by BenchLink, make it grow too, but they are never required: without them the bubble simply ignores them.
 The bubble always uses the most upgraded station of each type in range, so upgrading a different bench of the same type, or building a better one, makes the bubble grow.
 If one of its stations is destroyed, the bubble switches to the next best one in range; if none is left, the bubble goes down until one is built.
 
