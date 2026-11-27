@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 using HarmonyLib;
 
+using HomeBubble.Core;
 using HomeBubble.Raids;
 
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace HomeBubble.Patches;
 /// later instead.
 /// </summary>
 [HarmonyPatch(typeof(RandEventSystem), nameof(RandEventSystem.GetValidEventPoints))]
+[Feature(RaidDeferral.Feature)]
 internal static class RandEventSystem_GetValidEventPoints_Patch
 {
     private static void Postfix(RandomEvent ev, List<Vector3> __result)

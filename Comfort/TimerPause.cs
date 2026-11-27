@@ -8,6 +8,9 @@ namespace HomeBubble.Comfort;
 /// </summary>
 internal static class TimerPause
 {
+    /// <summary>The food and Rested patches. Without it, both wear off inside a bubble as in vanilla.</summary>
+    public const string Feature = "Pause timers";
+
     /// <summary>Whether this player's food and Rested timers are held where they are.</summary>
     public static bool IsPaused(Player player)
     {

@@ -1,6 +1,7 @@
 using HarmonyLib;
 
 using HomeBubble.Comfort;
+using HomeBubble.Core;
 
 namespace HomeBubble.Patches;
 
@@ -10,6 +11,7 @@ namespace HomeBubble.Patches;
 /// the tick is about to take from it. Food still heals you over time as usual.
 /// </summary>
 [HarmonyPatch(typeof(Player), nameof(Player.UpdateFood))]
+[Feature(TimerPause.Feature)]
 internal static class Player_UpdateFood_Patch
 {
     /// <summary>Seconds of food time vanilla takes on each tick.</summary>

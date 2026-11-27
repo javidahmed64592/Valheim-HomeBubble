@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- If a game update breaks part of the mod, only that part turns off and the rest keeps working: holding food and Rested inside a bubble, holding off raids, the missing-station message and the Hammer highlight without the dome can each turn off while the bubble still keeps monsters out. The log says which part is off, in one line. If the bubble itself breaks, the whole mod turns off cleanly instead of throwing errors.
+- New `DisabledFeatures` setting under `[Debug]`, for testing: turns parts of the mod off by name.
+- Updated Jotunn to 2.30.3.
+
 ## 1.0.1
 
 - The Black Forge and Galdr Table now count when they're in range through BenchLink, like the four required stations already did. Their upgrades make the bubble bigger and add to its damage resistance. Before, they only counted within their own build range of the bubble.

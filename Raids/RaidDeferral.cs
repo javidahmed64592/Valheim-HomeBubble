@@ -11,6 +11,12 @@ namespace HomeBubble.Raids;
 /// </summary>
 internal static class RaidDeferral
 {
+    /// <summary>
+    /// The raid patches, which run on the server. Without it, raids start on players inside a bubble as in vanilla,
+    /// and raids already held off don't happen later.
+    /// </summary>
+    public const string Feature = "Raid protection";
+
     private const float CheckInterval = 5f;
 
     /// <summary>The raid a bubble held off, waiting to start.</summary>
