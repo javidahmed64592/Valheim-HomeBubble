@@ -62,11 +62,13 @@ A raid that a bubble holds off happens later instead, once you have spent a few 
 
 Settings are in the BepInEx config file `javidahmed64592.homebubble.cfg`.
 Settings marked "(Synced with server)" use the server's values when the server has the mod installed.
+`DisabledFeatures` under `[Debug]` is for testing: it turns parts of the mod off by name. Leave it empty to play normally.
 
 ## Compatibility
 
 - The bubble is built from the vanilla Shield Generator, so mods that change the Shield Generator may change the bubble too.
 - Mods that change how monsters avoid safe zones, such as the trader's camp, may change how the bubble keeps them out.
+- If a game update breaks part of the mod, that part turns off on its own and the log says which one; the rest keeps working.
 - This mod has not been tested with a gamepad, only with keyboard and mouse.
 
 ## Uninstalling

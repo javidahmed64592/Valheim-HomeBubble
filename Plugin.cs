@@ -34,7 +34,10 @@ public class HomeBubblePlugin : BaseUnityPlugin
         Translations.Load();
 
         _harmony = new Harmony(PluginGUID);
-        _harmony.PatchAll();
+        if (!SafePatcher.PatchAll(_harmony, Config, Logger))
+        {
+            return;
+        }
 
         PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
         ZoneManager.OnVanillaLocationsAvailable += BubblePrefab.AttachForceField;
@@ -45,6 +48,11 @@ public class HomeBubblePlugin : BaseUnityPlugin
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "Unity message")]
     private void Update()
     {
+        if (!SafePatcher.ModEnabled)
+        {
+            return;
+        }
+
         BubbleMap.Tick();
     }
 

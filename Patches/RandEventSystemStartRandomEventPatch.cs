@@ -1,5 +1,6 @@
 using HarmonyLib;
 
+using HomeBubble.Core;
 using HomeBubble.Raids;
 
 namespace HomeBubble.Patches;
@@ -9,6 +10,7 @@ namespace HomeBubble.Patches;
 /// happen later if no raid started at all.
 /// </summary>
 [HarmonyPatch(typeof(RandEventSystem), nameof(RandEventSystem.StartRandomEvent))]
+[Feature(RaidDeferral.Feature)]
 internal static class RandEventSystem_StartRandomEvent_Patch
 {
     private static void Prefix(RandEventSystem __instance, out RandomEvent __state)

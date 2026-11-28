@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 
 using HomeBubble.Bubble;
+using HomeBubble.Core;
 using HomeBubble.Prefabs;
 
 using UnityEngine;
@@ -15,8 +16,12 @@ namespace HomeBubble.Patches;
 /// dome out keeps the highlight on the generator only.
 /// </summary>
 [HarmonyPatch(typeof(MaterialMan.PropertyContainer), nameof(MaterialMan.PropertyContainer.RefreshRenderers))]
+[Feature(Feature)]
 internal static class MaterialMan_PropertyContainer_RefreshRenderers_Patch
 {
+    /// <summary>This and the ResetHighlight patch. Without it, the whole dome lights up when the Hammer highlights the bubble, and the generator's glow can blink off after a highlight.</summary>
+    public const string Feature = "Highlight without dome";
+
     private static void Postfix(GameObject go, List<Renderer> ___m_assignedRenderers)
     {
         if (go != null && go.TryGetComponent(out HomeBubbleZone _))
