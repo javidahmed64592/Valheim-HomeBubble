@@ -21,7 +21,7 @@ public class HomeBubblePlugin : BaseUnityPlugin
 {
     public const string PluginGUID = "javidahmed64592.homebubble";
     public const string PluginName = "Home Bubble";
-    public const string PluginVersion = "1.0.1";
+    public const string PluginVersion = "1.1.0";
 
     internal static BepInEx.Logging.ManualLogSource Log { get; private set; }
 

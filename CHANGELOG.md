@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
-- If a game update breaks part of the mod, only that part turns off and the rest keeps working: holding food and Rested inside a bubble, holding off raids, the missing-station message and the Hammer highlight without the dome can each turn off while the bubble still keeps monsters out. The log says which part is off, in one line. If the bubble itself breaks, the whole mod turns off cleanly instead of throwing errors.
-- New `DisabledFeatures` setting under `[Debug]`, for testing: turns parts of the mod off by name.
+- **Safer after game updates:** if an update breaks part of the mod (such as holding food and Rested, holding off raids or the Hammer highlight), only that part turns off and the log says which, in one line; the bubble still keeps monsters out. If the bubble itself breaks, the whole mod turns off cleanly instead of throwing errors.
+- **Debug setting:** the new `DisabledFeatures` setting under `[Debug]` turns parts of the mod off by name, for testing.
 - Updated Jotunn to 2.30.3.
 
 ## 1.0.1
